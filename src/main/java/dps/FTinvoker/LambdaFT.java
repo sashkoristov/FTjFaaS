@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.util.Map;
 import dps.invoker.LambdaInvoker;
 
+
 public class LambdaFT {
 
 	/**
@@ -14,7 +15,7 @@ public class LambdaFT {
 	 */
 	public static String monitoredInvoke(LambdaInvoker awsInvoker, String function, Map<String, Object> functionInputs)
 			throws Exception {
-		SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:./BA/FTDatabase.db")
+		SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:./BA/FTDatabase.db");
 		String returnValue;
 		Timestamp returnTime = null, invokeTime = null;
 		try {
@@ -24,18 +25,18 @@ public class LambdaFT {
 		} catch (Exception e) {
 			returnTime = new Timestamp(System.currentTimeMillis());
 			// save to DB
-			DB.add(function,invokeTime.toString(),returnTime.toString(),e.getClass().getName());
+			DB.add(function,invokeTime,returnTime,e.getClass().getName());
 			throw e;
 		}
 		returnTime = new Timestamp(System.currentTimeMillis());
 		int searchIndex = returnValue.indexOf("\"errorType\"");
 		if (searchIndex != -1) {
 			// save to DB
-			DB.add(function,invokeTime.toString(),returnTime.toString(),parseError(returnValue,searchIndex));
+			DB.add(function,invokeTime,returnTime,parseError(returnValue,searchIndex));
 			throw new Exception(returnValue);
 		}
 		// save to DB
-		DB.add(function,invokeTime.toString(),returnTime.toString(),"OK");
+		DB.add(function,invokeTime,returnTime,"OK");
 		return returnValue;
 	};
 
