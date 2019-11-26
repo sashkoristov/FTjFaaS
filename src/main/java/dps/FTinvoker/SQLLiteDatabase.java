@@ -8,16 +8,16 @@ import java.sql.Timestamp;
 
 public class SQLLiteDatabase {
 	private String url;
-	
-	public SQLLiteDatabase(String url){
-		this.url=url;
+
+	public SQLLiteDatabase(String url) {
+		this.url = url;
 	}
-			
-	public boolean add(String function,Timestamp invokeTime,Timestamp returnTime,String status){
+
+	public boolean add(String function, Timestamp invokeTime, Timestamp returnTime, String status) {
 		String sql = "INSERT INTO invokedFunctions (funcLink,invokeTime,returnTime,execTime,status) VALUES(?,?,?,?,?)";
 		Connection conn = null;
-		try{
-			conn = DriverManager.getConnection(url); 
+		try {
+			conn = DriverManager.getConnection(url);
 			PreparedStatement pstmt = conn.prepareStatement(sql);
 			pstmt.setString(1, function);
 			pstmt.setString(2, invokeTime.toString());
@@ -37,14 +37,4 @@ public class SQLLiteDatabase {
 			}
 		}
 	}
-
-		
-		
-		
-
-	
-
-	
-	
-	
 }
