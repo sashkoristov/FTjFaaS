@@ -6,10 +6,10 @@ package dps.FTinvoker.exception;
  * @author Matteo Battaglin
  *
  */
-public class ResourceNotFoundException extends Exception {
+public class InvalidResourceException extends Exception {
 	private static final long serialVersionUID = 1L;
 
-	public ResourceNotFoundException(String message) {
+	public InvalidResourceException(String message) {
 		super(message);
 	}
 }

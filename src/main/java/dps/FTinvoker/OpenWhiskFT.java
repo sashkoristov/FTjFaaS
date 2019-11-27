@@ -2,9 +2,8 @@ package dps.FTinvoker;
 
 import java.sql.Timestamp;
 import java.util.Map;
-
 import dps.FTinvoker.exception.AuthenticationFailedException;
-import dps.FTinvoker.exception.ResourceNotFoundException;
+import dps.FTinvoker.exception.InvalidResourceException;
 import dps.FTinvoker.exception.SyntaxErrorException;
 import dps.FTinvoker.exception.TimeLimitException;
 import dps.invoker.OpenWhiskInvoker;
@@ -18,23 +17,29 @@ public class OpenWhiskFT {
 	 */
 	public static String monitoredInvoke(OpenWhiskInvoker whiskInvoker, String function,
 			Map<String, Object> functionInputs) throws Exception {
-		SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
 		String returnValue;
 		Timestamp returnTime = null, invokeTime = null;
+		SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
+		
 		try {
+			// save timestamp and invoke
 			invokeTime = new Timestamp(System.currentTimeMillis());
 			returnValue = whiskInvoker.invokeFunction(function, functionInputs);
 			assert returnValue != null;
-		} catch (Exception e) {
+		} 
+		
+		catch (Exception e) { // catch all Exceptions and pass them up the chain
 			returnTime = new Timestamp(System.currentTimeMillis());
 			DB.add(function, invokeTime, returnTime, e.getClass().getName() + ": " + e.getMessage());
 			throw e;
 		}
+		
+		//Was invoked without throwing an Exception or returning null
 		returnTime = new Timestamp(System.currentTimeMillis());
 		if (returnValue.contains("\"error\"")) {
 			try {
 				parseAndThrowException(returnValue);
-			} catch (SyntaxErrorException | ResourceNotFoundException | AuthenticationFailedException
+			} catch (SyntaxErrorException | InvalidResourceException | AuthenticationFailedException
 					| TimeLimitException e) {
 				DB.add(function, invokeTime, returnTime, e.getClass().getName());
 				throw e;
@@ -43,6 +48,8 @@ public class OpenWhiskFT {
 				throw e;
 			}
 		}
+		
+		// Correct Return value without Errors
 		DB.add(function, invokeTime, returnTime, "Success");
 		return returnValue;
 	};
@@ -59,11 +66,11 @@ public class OpenWhiskFT {
 	 * @throws Exception
 	 */
 	private static void parseAndThrowException(String returnValue) throws SyntaxErrorException,
-			ResourceNotFoundException, AuthenticationFailedException, TimeLimitException, Exception {
+			InvalidResourceException, AuthenticationFailedException, TimeLimitException, Exception {
 		if (returnValue.contains("SyntaxError")) {
 			throw new SyntaxErrorException(returnValue);
 		} else if (returnValue.contains("requested resource does not exist")) {
-			throw new ResourceNotFoundException(returnValue);
+			throw new InvalidResourceException(returnValue);
 		} else if (returnValue.contains("supplied authentication is invalid")
 				|| returnValue.contains("resource requires authentication")
 				|| returnValue.contains("supplied authentication is not authorized")) {
