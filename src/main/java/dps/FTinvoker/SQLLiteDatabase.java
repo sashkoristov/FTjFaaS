@@ -13,6 +13,10 @@ public class SQLLiteDatabase {
 		this.url = url;
 	}
 
+	/**
+	 * Method to insert monitoring data to existing SQLLiteDatabase 
+	 * Returns True if successful or False if failure.
+	 */
 	public boolean add(String function, Timestamp invokeTime, Timestamp returnTime, String status) {
 		String sql = "INSERT INTO invokedFunctions (funcLink,invokeTime,returnTime,execTime,status) VALUES(?,?,?,?,?)";
 		Connection conn = null;
