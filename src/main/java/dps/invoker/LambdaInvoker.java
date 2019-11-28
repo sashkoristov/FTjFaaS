@@ -1,5 +1,6 @@
 package dps.invoker;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
@@ -39,8 +40,14 @@ public class LambdaInvoker implements FaaSInvoker {
 
         BasicAWSCredentials awsCreds = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
 
+        // TODO check: better add this in constructor? Are default values set?
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setSocketTimeout(900 * 1000);
+
         AWSLambda awsLambda = AWSLambdaClientBuilder.standard().withRegion(Regions.US_EAST_1)
-                .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).build();
+                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                .withClientConfiguration(clientConfiguration)
+                .build();
 
         InvokeResult invokeResult = null;
 
