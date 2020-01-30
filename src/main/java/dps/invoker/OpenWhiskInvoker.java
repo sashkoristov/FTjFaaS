@@ -1,8 +1,6 @@
 package dps.invoker;
 import com.google.gson.Gson;
-
 import dps.FTinvoker.exception.CancelInvokeException;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -22,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class OpenWhiskInvoker  {
+public class OpenWhiskInvoker implements FaaSInvoker {
 
     private String key;
 	private HttpUriRequest Myrequest;
