@@ -135,8 +135,10 @@ public class MasterThread implements Runnable {
 		// throws exception if it has tried entire alternativeStrategy without
 		// success
 		if (function.getFTSettings().getAltStrategy() != null) {
+			int i = 0;
 			for (List<Function> alternativePlan : function.getFTSettings().getAltStrategy()) {
-				System.out.println("##############");
+				System.out.println("##############  Trying Alternative Plan "+i +"  ##############");
+				i++;
 				try {
 					String result = parallelInvoke(alternativePlan);
 					return result;
@@ -170,6 +172,7 @@ public class MasterThread implements Runnable {
 		} else { // check FT Settings because first invocation has failed.
 			if (this.function.hasFTSet()) {
 				int i = 0;
+				System.out.println("##############  First invokation has failed retrying "+function.getFTSettings().getRetries()+ " times.  ##############");
 				while (i < function.getFTSettings().getRetries()) {
 					this.invokThread.reset();
 					this.invokThread.run();

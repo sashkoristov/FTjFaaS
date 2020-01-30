@@ -110,14 +110,14 @@ public class InvokationThread implements Runnable {
 			this.result = invokeFunctionOnCorrectProvider(this.function);
 		} catch (CancelInvokeException e) {
 			this.result = null;
-			System.out.println(thread.toString() + "has been canceled.");
+			System.out.println("Invocation in " +thread.toString() + "has been canceled.");
 			System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
 		} catch (Exception e) {
 			this.result = null;
-			System.out.println(thread.toString() + "failed! - [" + e.toString() + "]");
+			System.out.println("Invocation in "+thread.toString() + "failed!");
 			System.out.flush();
 			this.exception = e;
 			this.finished = true;
@@ -125,7 +125,7 @@ public class InvokationThread implements Runnable {
 		}
 		this.finished = true;
 		this.exception = null;
-		System.out.println(thread.toString() + " OK - " + "RESULT: " + result);
+		System.out.println("Invocation in "+thread.toString() + " OK - " + "RESULT: " + result);
 		System.out.flush();
 	}
 
