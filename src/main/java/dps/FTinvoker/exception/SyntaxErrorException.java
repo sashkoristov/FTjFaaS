@@ -1,10 +1,7 @@
 package dps.FTinvoker.exception;
 
 /**
- * -Custom exception which is thrown when Function is not found on FaaS provider
- * 
- * @author Matteo Battaglin
- *
+ * -Custom exception that is thrown if Syntax Errors where detected
  */
 public class SyntaxErrorException extends Exception {
 	private static final long serialVersionUID = 1L;
