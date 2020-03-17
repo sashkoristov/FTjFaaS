@@ -13,16 +13,17 @@ import dps.FTinvoker.exception.SyntaxErrorException;
 import dps.FTinvoker.exception.TimeLimitException;
 import dps.FTinvoker.exception.TimedOutException;
 import dps.FTinvoker.function.Function;
-import dps.invoker.LambdaInvoker;
+import dps.invoker.FaaSInvoker;
 
-public class LambdaFT {
+public class LambdaMonitor implements InvokeMonitor{
 
 	/**
 	 * Method to invoke Lambda Functions with Monitoring (using dpsinvoker.jar)
 	 * Parses errors and tries to identify known Exceptions to throw Returns
 	 * correct value or throws Exception
 	 */
-	public static String monitoredInvoke(LambdaInvoker awsInvoker, Function function)
+	@Override
+	public String monitoredInvoke(FaaSInvoker invoker, Function function)
 			throws Exception {
 		String returnValue;
 		Timestamp returnTime = null, invokeTime = null;
@@ -30,7 +31,7 @@ public class LambdaFT {
 		try {
 			// save timestamp and invoke
 			invokeTime = new Timestamp(System.currentTimeMillis());
-			returnValue = awsInvoker.invokeFunction(function.getUrl(), function.getFunctionInputs());
+			returnValue = invoker.invokeFunction(function.getUrl(), function.getFunctionInputs());
 			assert returnValue != null;
 
 		} catch (AbortedException e) { //has been canceled
@@ -112,12 +113,13 @@ public class LambdaFT {
 	 * Method Parses errorType from returnValue containing an Error Returns
 	 * String of errorType
 	 */
-	private static String parseError(String returnValue, int searchIndex) {
+	private String parseError(String returnValue, int searchIndex) {
 		String tmp;
 		tmp = returnValue.substring(searchIndex + 12);
 		tmp = tmp.substring(tmp.indexOf("\"") + 1);
 		tmp = tmp.split("\"")[0];
 		return tmp;
 	}
+
 
 }

@@ -1,6 +1,5 @@
 package dps.FTinvoker;
 import com.amazonaws.regions.Regions;
-
 import dps.FTinvoker.database.SQLLiteDatabase;
 import dps.FTinvoker.exception.CancelInvokeException;
 import dps.FTinvoker.exception.InvalidResourceException;
@@ -117,7 +116,7 @@ public class InvokationThread implements Runnable {
 			return;
 		} catch (Exception e) {
 			this.result = null;
-			System.out.println("Invocation in "+thread.toString() + "failed!");
+			System.out.println("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
 			System.out.flush();
 			this.exception = e;
 			this.finished = true;
@@ -154,7 +153,8 @@ public class InvokationThread implements Runnable {
 			OpenWhiskInvoker OWinvoker = new OpenWhiskInvoker(this.ibmAccount.getIBMKey());
 			this.ibmInvoker = OWinvoker; // Set so invocation can be canceled;
 			if (!this.cancel) {
-				return OpenWhiskFT.monitoredInvoke(OWinvoker, function);
+				OpenWhiskMonitor owMonitor = new OpenWhiskMonitor();
+				return owMonitor.monitoredInvoke(OWinvoker, function);
 			} else {
 				throw new CancelInvokeException();
 			}
@@ -165,7 +165,8 @@ public class InvokationThread implements Runnable {
 			 LambdaInvoker lambdaInvoker = new LambdaInvoker(this.awsAccount.getAwsAccessKey(),
 						this.awsAccount.getAwsSecretKey(), detectedRegion);
 				if (!this.cancel) {
-						return LambdaFT.monitoredInvoke(lambdaInvoker, function);
+					LambdaMonitor lambdaMonitor = new LambdaMonitor();
+						return lambdaMonitor.monitoredInvoke(lambdaInvoker, function);
 				} else {
 					throw new CancelInvokeException();
 				}

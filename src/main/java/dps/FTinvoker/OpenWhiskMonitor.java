@@ -9,16 +9,22 @@ import dps.FTinvoker.exception.InvalidResourceException;
 import dps.FTinvoker.exception.SyntaxErrorException;
 import dps.FTinvoker.exception.TimeLimitException;
 import dps.FTinvoker.function.Function;
+import dps.invoker.FaaSInvoker;
 import dps.invoker.OpenWhiskInvoker;
 
-public class OpenWhiskFT {
+public class OpenWhiskMonitor implements InvokeMonitor{
 
 	/**
 	 * Method to invoke OpenWhisk functions with monitoring (using
 	 * dpsinvoker.jar) Saves monitoring data to database Returns value or throws
 	 * exceptions if invokation resulted in error
 	 */
-	public static String monitoredInvoke(OpenWhiskInvoker whiskInvoker, Function function) throws Exception {
+	
+	
+	@Override
+	public String monitoredInvoke(FaaSInvoker invoker, Function function) throws Exception {
+		OpenWhiskInvoker whiskInvoker = (OpenWhiskInvoker) invoker;
+		
 		String returnValue;
 		Timestamp returnTime = null, invokeTime = null;
 		SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
@@ -77,7 +83,7 @@ public class OpenWhiskFT {
 	 * @throws UnknownException
 	 * @throws Exception
 	 */
-	private static void parseAndThrowException(String returnValue) throws SyntaxErrorException,
+	private void parseAndThrowException(String returnValue) throws SyntaxErrorException,
 			InvalidResourceException, AuthenticationFailedException, TimeLimitException, Exception {
 		if (returnValue.contains("SyntaxError")) {
 			throw new SyntaxErrorException(returnValue);
@@ -93,5 +99,6 @@ public class OpenWhiskFT {
 		// if none detected throw basic Exception
 		throw new Exception(returnValue);
 	}
+
 
 }
