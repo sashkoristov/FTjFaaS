@@ -46,4 +46,12 @@ public class FaultToleranceSettings {
 			return false;
 		}
 	}
+	
+	public boolean isEmpty(){
+		if (this.getRetries() == 0 && this.hasAlternativeStartegy() == false){
+			return true;
+		}else{
+			return false;
+		}
+	}
 }

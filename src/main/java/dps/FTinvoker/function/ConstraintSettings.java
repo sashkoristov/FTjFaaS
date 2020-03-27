@@ -65,4 +65,12 @@ public class ConstraintSettings {
 			return false;
 		}
 	}
+	
+	public boolean isEmpty(){
+		if (this.hasLatestFinishingTime() == false && this.hasLatestStartingTime() == false && this.hasMaxRunningTime() == false){
+			return true;
+		}else{
+			return false;
+		}
+	}
 }

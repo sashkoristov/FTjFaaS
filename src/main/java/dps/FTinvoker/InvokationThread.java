@@ -1,5 +1,9 @@
 package dps.FTinvoker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.regions.Regions;
+
 import dps.FTinvoker.database.SQLLiteDatabase;
 import dps.FTinvoker.exception.CancelInvokeException;
 import dps.FTinvoker.exception.InvalidResourceException;
@@ -14,15 +18,16 @@ import dps.invoker.OpenWhiskInvoker;
  * If successful it will store result in "result"
  */
 public class InvokationThread implements Runnable {
+	final static Logger logger = LoggerFactory.getLogger(InvokationThread.class);
 	private Exception exception;
-	private Thread thread;
+	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
 	private IBMAccount ibmAccount = null;
 	private OpenWhiskInvoker ibmInvoker = null; // needed to cancel invocation
 	private Function function;
-	private boolean cancel = false;
-	private boolean finished = false;
-	private String result = null;
+	volatile private boolean cancel = false;
+	volatile private boolean finished = false;
+	volatile private String result = null;
 
 	InvokationThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
@@ -81,6 +86,7 @@ public class InvokationThread implements Runnable {
 	 * stops this thread
 	 */
 	public synchronized void stop() {
+		logger.info("Stopping");
 		// Stop invokation and terminate thread
 		this.cancel = true;
 		if (this.ibmInvoker != null) {
@@ -109,23 +115,25 @@ public class InvokationThread implements Runnable {
 			this.result = invokeFunctionOnCorrectProvider(this.function);
 		} catch (CancelInvokeException e) {
 			this.result = null;
-			System.out.println("Invocation in " +thread.toString() + "has been canceled.");
-			System.out.flush();
+			logger.info("Invocation in " +thread.toString() + "has been canceled.");
+			//System.out.println("Invocation in " +thread.toString() + "has been canceled.");
+			//System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
 		} catch (Exception e) {
 			this.result = null;
-			System.out.println("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
-			System.out.flush();
+			logger.error("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
+			//System.out.println("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
+			//System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
 		}
 		this.finished = true;
 		this.exception = null;
-		System.out.println("Invocation in "+thread.toString() + " OK - " + "RESULT: " + result);
-		System.out.flush();
+		//System.out.println("Invocation in "+thread.toString() + " OK - " + "RESULT: " + result);
+		//System.out.flush();
 	}
 
 	/**
@@ -209,7 +217,7 @@ public class InvokationThread implements Runnable {
 		this.finished = finished;
 	}
 
-	public Exception getException() {
+	public synchronized Exception getException() {
 		return exception;
 	}
 

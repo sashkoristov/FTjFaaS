@@ -13,7 +13,6 @@ import java.util.List;
 
 import dps.FTinvoker.function.Function;
 
-
 /**
  * SQLLite Database url = url to SQLite Database file.
  */
@@ -102,8 +101,9 @@ public class SQLLiteDatabase {
 				AlternativeList.add(alternativeFunc);
 			}
 			for (Function each : AlternativeList) {
-				each.setSuccessRate(getSuccessRate(each.getUrl()) * getRegionAvailability(each.getRegion())); 
-				// Multiply availability set for this function with availability of its region
+				each.setSuccessRate(getSuccessRate(each.getUrl()) * getRegionAvailability(each.getRegion()));
+				// Multiply availability set for this function with availability
+				// of its region
 			}
 			Collections.sort(AlternativeList, new FunctionSuccessRateComperator());
 			Collections.reverse(AlternativeList);// So it will be starting with
@@ -168,6 +168,34 @@ public class SQLLiteDatabase {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public int getCount() {
+		String count = "select count(*) from Invokations";
+		Connection conn = null;
+		try {
+			double successRate;
+			int okCount = 0;
+			double allCount = 0;
+			conn = DriverManager.getConnection(url);
+			Statement stmt = null;
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(count);
+			while (rs.next()) {
+				okCount = rs.getInt("count(*)");
+				return okCount;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return 0;
+		} finally {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return 0;
 	}
 
 	/**

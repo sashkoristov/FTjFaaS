@@ -2,6 +2,9 @@ package dps.FTinvoker;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import dps.FTinvoker.exception.CancelInvokeException;
 import dps.FTinvoker.exception.InvokationFailureException;
 import dps.FTinvoker.function.Function;
@@ -12,14 +15,15 @@ import dps.FTinvoker.function.Function;
  * Constraints will be checked by the FaultToleranceEngine
  */
 public class MasterThread implements Runnable {
-	private Thread thread;
+	final Logger logger = LoggerFactory.getLogger(MasterThread.class);
+	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
 	private IBMAccount ibmAccount = null;
 	private Function function;
-	private boolean cancel = false;
-	private boolean finished = false;
-	private String result = null;
-	private InvokationThread invokThread = null;
+	volatile private boolean cancel = false;
+	volatile private boolean finished = false;
+	volatile private String result = null;
+	volatile private InvokationThread invokThread = null;
 
 	MasterThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
@@ -137,7 +141,7 @@ public class MasterThread implements Runnable {
 		if (function.getFTSettings().getAltStrategy() != null) {
 			int i = 0;
 			for (List<Function> alternativePlan : function.getFTSettings().getAltStrategy()) {
-				System.out.println("##############  Trying Alternative Plan "+i +"  ##############");
+				logger.info("##############  Trying Alternative Plan "+i +"  ##############");
 				i++;
 				try {
 					String result = parallelInvoke(alternativePlan);
@@ -172,7 +176,7 @@ public class MasterThread implements Runnable {
 		} else { // check FT Settings because first invocation has failed.
 			if (this.function.hasFTSet()) {
 				int i = 0;
-				System.out.println("##############  First invokation has failed retrying "+function.getFTSettings().getRetries()+ " times.  ##############");
+				logger.info("##############  First invokation has failed retrying "+function.getFTSettings().getRetries()+ " times.  ##############");
 				while (i < function.getFTSettings().getRetries()) {
 					this.invokThread.reset();
 					this.invokThread.run();
