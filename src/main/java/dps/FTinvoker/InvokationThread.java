@@ -132,8 +132,7 @@ public class InvokationThread implements Runnable {
 		}
 		this.finished = true;
 		this.exception = null;
-		//System.out.println("Invocation in "+thread.toString() + " OK - " + "RESULT: " + result);
-		//System.out.flush();
+		logger.info("Invocation in "+thread.toString() + " OK - " + "RESULT: " + result);
 	}
 
 	/**
@@ -181,14 +180,14 @@ public class InvokationThread implements Runnable {
 			}catch(InvalidResourceException e){
 				// Add to DB (Normally after invokation - but will never be reached so we do it here)
 				SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
-				DB.add(function.getUrl(), function.getType(), "AWS",null, null, null, e.getClass().getName(), "Region detection Failed");
+				DB.addInvocation(function.getUrl(), function.getType(), "AWS",null, null, null, e.getClass().getName(), "Region detection Failed");
 				throw e;
 			}
 		default:
 			// Tell Scheduler we cannot deal with this request;
 			SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
 			InvalidResourceException exception = new InvalidResourceException("Detection of provider failed");
-			DB.add(function.getUrl(), function.getType(), null,null, null, null,exception.getClass().getName(), "Provider detection Failed");
+			DB.addInvocation(function.getUrl(), function.getType(), null,null, null, null,exception.getClass().getName(), "Provider detection Failed");
 			throw exception;
 		}
 	}

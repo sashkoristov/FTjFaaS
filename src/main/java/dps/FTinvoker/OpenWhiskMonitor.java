@@ -35,21 +35,21 @@ public class OpenWhiskMonitor implements InvokeMonitor{
 			assert returnValue != null;
 		} catch (CancelInvokeException e) {
 			returnTime = new Timestamp(System.currentTimeMillis());
-			DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"Canceled", null);
+			DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"Canceled", null);
 			throw e;
 		} catch (SocketException e) { // could be canceled invokation
 			returnTime = new Timestamp(System.currentTimeMillis());
 			if (whiskInvoker.cancel) {
-				DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"Canceled", null);
+				DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"Canceled", null);
 				throw new CancelInvokeException();
 			} else {
-				DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+				DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
 				throw e;
 			}
 		}
 		catch (Exception e) { // catch all Exceptions and pass them up the chain
 			returnTime = new Timestamp(System.currentTimeMillis());
-			DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+			DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
 			throw e;
 		}
 		// Was invoked without throwing an Exception or returning null
@@ -59,16 +59,16 @@ public class OpenWhiskMonitor implements InvokeMonitor{
 				parseAndThrowException(returnValue);
 			} catch (SyntaxErrorException | InvalidResourceException | AuthenticationFailedException
 					| TimeLimitException e) {
-				DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+				DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
 				throw e;
 			} catch (Exception e) {
-				DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+				DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
 				throw e;
 			}
 		}
 
 		// Correct Return value without Errors
-		DB.add(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"OK", null);
+		DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"OK", null);
 		return returnValue;
 	};
 

@@ -67,6 +67,11 @@ public class Function {
 		this.FTSettings = FTSettings;
 		this.constraints = constraints;
 	}
+	
+	
+	 public String toString(){ 
+		  return "URL:"+this.url+", Type: "+this.getType();  
+		 }
 
 	public Map<String, Object> getFunctionInputs() {
 		return functionInputs;
