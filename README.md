@@ -1,10 +1,6 @@
-# DPS invoker
+# Fault Tolerance jFaaS (FTjFaaS)
 
-### Please do not change the [FaasInvoker](src/main/java/dps/invoker/FaaSInvoker.java) interface. It is used by the EE and other students.
-
-
----------------
-## The DB consists of 4 Tables:
+## The DB on which FTjFaaS is based should contain the following 4 tables:
 
 - **Functions** : This Table is used to store all the main and alternative function links. It is where the scheduler will check what alternatives are available for a given main implementation. You will have to add the resource links you want to this Table for the scheduler to use them when creating an alternative Strategy.
 
