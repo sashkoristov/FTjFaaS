@@ -139,7 +139,7 @@ public class InvokationThread implements Runnable {
 	 * Detects the FaaS provider
 	 */
 	private static String detectProvider(String functionURL) {
-		if (functionURL.contains(".functions.cloud.ibm.com/")) {
+		if (functionURL.contains(".functions.cloud.ibm.com/") || functionURL.contains(".functions.appdomain.cloud/")) {
 			return "ibm";
 		}
 		if (functionURL.contains("arn:aws:lambda:")) {
