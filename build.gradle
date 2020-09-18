@@ -47,7 +47,7 @@ publishing {
 }
 
 shadowJar {
-    baseName = 'FTjFaaS'
-    classifier = null
-    version = null
+    archiveBaseName.set('FTjFaaS')
+    archiveClassifier.set(null)
+    archiveVersion.set(null)
 }
