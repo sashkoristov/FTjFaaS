@@ -4,6 +4,8 @@ import at.uibk.dps.database.SQLLiteDatabase;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
+import jFaaS.Gateway;
+import jFaaS.invokers.HTTPGETInvoker;
 import jFaaS.invokers.LambdaInvoker;
 import jFaaS.invokers.OpenWhiskInvoker;
 import org.slf4j.Logger;
@@ -141,9 +143,10 @@ public class InvokationThread implements Runnable {
 	private static String detectProvider(String functionURL) {
 		if (functionURL.contains(".functions.cloud.ibm.com/") || functionURL.contains(".functions.appdomain.cloud/")) {
 			return "ibm";
-		}
-		if (functionURL.contains("arn:aws:lambda:")) {
+		} else if (functionURL.contains("arn:aws:lambda:")) {
 			return "aws";
+		} else if (functionURL.contains("fc.aliyuncs.com")) {
+			return "alibaba";
 		}
 		// Inform Scheduler Provider Detection Failed
 		return "fail";
@@ -182,6 +185,14 @@ public class InvokationThread implements Runnable {
 				SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
 				DB.addInvocation(function.getUrl(), function.getType(), "AWS",null, null, null, e.getClass().getName(), "Region detection Failed");
 				throw e;
+			}
+		case "alibaba":
+			// TODO do real monitoring
+			HTTPGETInvoker httpgetInvoker = new HTTPGETInvoker();
+			if (!this.cancel) {
+				return String.valueOf(httpgetInvoker.invokeFunction(function.getUrl(), function.getFunctionInputs()));
+			} else {
+				throw new CancelInvokeException();
 			}
 		default:
 			// Tell Scheduler we cannot deal with this request;
