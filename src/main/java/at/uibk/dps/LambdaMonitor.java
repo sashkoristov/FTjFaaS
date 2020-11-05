@@ -22,7 +22,10 @@ public class LambdaMonitor implements InvokeMonitor{
 			throws Exception {
 		String returnValue;
 		Timestamp returnTime = null, invokeTime = null;
-		SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
+		SQLLiteDatabase DB = null;
+		if(Configuration.enableDatabase){
+			DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
+		}
 		try {
 			// save timestamp and invoke
 			invokeTime = new Timestamp(System.currentTimeMillis());
@@ -31,23 +34,31 @@ public class LambdaMonitor implements InvokeMonitor{
 
 		} catch (AbortedException e) { //has been canceled
 			returnTime = new Timestamp(System.currentTimeMillis());
-			DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, "Canceled", null);
+			if(Configuration.enableDatabase){
+				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, "Canceled", null);
+			}
 			throw new CancelInvokeException();
 		}
 
 		catch (ResourceNotFoundException e) { // InvalidResourceException
 			returnTime = new Timestamp(System.currentTimeMillis());
-			DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, "InvalidResourceException", e.getMessage());
+			if(Configuration.enableDatabase){
+				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, "InvalidResourceException", e.getMessage());
+			}
 			throw new InvalidResourceException(e.getErrorMessage());
 
 		} catch (AWSLambdaException e) { // check if auth Exception or other
 			returnTime = new Timestamp(System.currentTimeMillis());
 			if (e.getErrorMessage().contains("security token included in the request is invalid")) {
 				AuthenticationFailedException newException = new AuthenticationFailedException(e.getErrorMessage());
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), e.getMessage());
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), e.getMessage());
+				}
 				throw newException;
 			} else {
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, e.getClass().getName(), e.getMessage());
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, e.getClass().getName(), e.getMessage());
+				}
 				throw e;
 			}
 
@@ -55,17 +66,23 @@ public class LambdaMonitor implements InvokeMonitor{
 			returnTime = new Timestamp(System.currentTimeMillis());
 			if (e.getMessage().contains("Unable to execute HTTP request: Read timed out")) {
 				TimeLimitException newException = new TimeLimitException(e.getMessage());
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), e.getMessage());
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), e.getMessage());
+				}
 				throw newException;
 			} else {
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, e.getClass().getName(),e.getMessage());
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, e.getClass().getName(),e.getMessage());
+				}
 				throw e;
 			}
 
 		} catch (Exception e) { // catch all Exceptions and pass them up the
 								// chain
 			returnTime = new Timestamp(System.currentTimeMillis());
-			DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, e.getClass().getName(), e.getMessage());
+			if(Configuration.enableDatabase){
+				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, e.getClass().getName(), e.getMessage());
+			}
 			throw e;
 		}
 
@@ -77,11 +94,15 @@ public class LambdaMonitor implements InvokeMonitor{
 		if (searchIndex != -1) {
 			if (returnValue.contains("Syntax error") || returnValue.contains("SyntaxError")) {// Syntax errors
 				SyntaxErrorException newException = new SyntaxErrorException(returnValue);
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), returnValue);
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), returnValue);
+				}
 				throw newException;
 			} else {
 				// save to DB
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,parseError(returnValue, searchIndex), returnValue);
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,parseError(returnValue, searchIndex), returnValue);
+				}
 				throw new Exception(returnValue);
 			}
 		}
@@ -90,17 +111,23 @@ public class LambdaMonitor implements InvokeMonitor{
 		if (searchIndex2 != -1) {
 			if (returnValue.contains("Task timed out")) {// Timed out
 				TimedOutException exception = new TimedOutException(returnValue);
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,exception.getClass().getName(), returnValue);
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,exception.getClass().getName(), returnValue);
+				}
 				throw exception;
 			} else {
 				// save to DB
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,parseError(returnValue, searchIndex), returnValue);
+				if(Configuration.enableDatabase){
+					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,parseError(returnValue, searchIndex), returnValue);
+				}
 				throw new Exception(returnValue);
 			}
 		}
 
 		// Correct Return value without Errors
-		DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,"OK", null);
+		if(Configuration.enableDatabase){
+			DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,"OK", null);
+		}
 		return returnValue;
 	};
 
