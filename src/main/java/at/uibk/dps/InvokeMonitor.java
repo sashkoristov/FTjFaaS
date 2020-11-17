@@ -3,7 +3,7 @@ package at.uibk.dps;
 import java.util.Map;
 
 import at.uibk.dps.function.Function;
-import jFaaS.invokers.FaaSInvoker;
+import jFaas.invokers.FaaSInvoker;
 
 /**
  * InvokeMonitor interface

@@ -6,10 +6,12 @@ package at.uibk.dps;
 public class AWSAccount {
 	private String awsAccessKey;
 	private String awsSecretKey;
+	private String awsSecctionToken;
 
-	public AWSAccount(String awsAccessKey, String awsSecretKey) {
+	public AWSAccount(String awsAccessKey, String awsSecretKey, String awsSecctionToken) {
 		this.awsAccessKey = awsAccessKey;
 		this.awsSecretKey = awsSecretKey;
+		this.awsSecctionToken = awsSecctionToken;
 	}
 
 	public String getAwsAccessKey() {
@@ -27,4 +29,8 @@ public class AWSAccount {
 	public void setAwsSecretKey(String awsSecretKey) {
 		this.awsSecretKey = awsSecretKey;
 	}
+
+	public String getAwsSecctionToken() { return awsSecctionToken; }
+
+	public void setAwsSecctionToken(String awsSecctionToken) { this.awsSecctionToken = awsSecctionToken; }
 }

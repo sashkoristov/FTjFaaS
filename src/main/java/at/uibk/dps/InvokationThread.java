@@ -4,10 +4,9 @@ import at.uibk.dps.database.SQLLiteDatabase;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
-import jFaaS.Gateway;
-import jFaaS.invokers.HTTPGETInvoker;
-import jFaaS.invokers.LambdaInvoker;
-import jFaaS.invokers.OpenWhiskInvoker;
+import jFaas.invokers.HTTPGETInvoker;
+import jFaas.invokers.LambdaInvoker;
+import jFaas.invokers.OpenWhiskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,7 +172,7 @@ public class InvokationThread implements Runnable {
 			 Regions detectedRegion = detectAWSRegion(function.getUrl());
 			 function.setRegion(detectedRegion.getName());
 			 LambdaInvoker lambdaInvoker = new LambdaInvoker(this.awsAccount.getAwsAccessKey(),
-						this.awsAccount.getAwsSecretKey(), detectedRegion);
+						this.awsAccount.getAwsSecretKey(), this.awsAccount.getAwsSecctionToken(), detectedRegion);
 				if (!this.cancel) {
 					LambdaMonitor lambdaMonitor = new LambdaMonitor();
 						return lambdaMonitor.monitoredInvoke(lambdaInvoker, function);

@@ -1,9 +1,9 @@
 package at.uibk.dps;
 import at.uibk.dps.exception.*;
 import at.uibk.dps.function.Function;
-import jFaaS.invokers.FaaSInvoker;
-import jFaaS.invokers.OpenWhiskInvoker;
 import at.uibk.dps.database.SQLLiteDatabase;
+import jFaas.invokers.FaaSInvoker;
+import jFaas.invokers.OpenWhiskInvoker;
 
 import java.sql.Timestamp;
 
@@ -14,8 +14,6 @@ public class OpenWhiskMonitor implements InvokeMonitor{
 	 * dpsinvoker.jar) Saves monitoring data to database Returns value or throws
 	 * exceptions if invokation resulted in error
 	 */
-	
-	
 	@Override
 	public String monitoredInvoke(FaaSInvoker invoker, Function function) throws Exception {
 		OpenWhiskInvoker whiskInvoker = (OpenWhiskInvoker) invoker;
@@ -91,6 +89,4 @@ public class OpenWhiskMonitor implements InvokeMonitor{
 		// if none detected throw basic Exception
 		throw new Exception(returnValue);
 	}
-
-
 }
