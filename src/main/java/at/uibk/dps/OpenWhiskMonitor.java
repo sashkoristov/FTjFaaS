@@ -1,9 +1,10 @@
 package at.uibk.dps;
+
 import at.uibk.dps.exception.*;
 import at.uibk.dps.function.Function;
 import at.uibk.dps.database.SQLLiteDatabase;
-import jFaas.invokers.FaaSInvoker;
-import jFaas.invokers.OpenWhiskInvoker;
+import jFaaS.invokers.FaaSInvoker;
+import jFaaS.invokers.OpenWhiskInvoker;
 
 import java.sql.Timestamp;
 

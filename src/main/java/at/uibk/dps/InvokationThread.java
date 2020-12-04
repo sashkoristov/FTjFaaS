@@ -4,9 +4,9 @@ import at.uibk.dps.database.SQLLiteDatabase;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
-import jFaas.invokers.HTTPGETInvoker;
-import jFaas.invokers.LambdaInvoker;
-import jFaas.invokers.OpenWhiskInvoker;
+import jFaaS.invokers.HTTPGETInvoker;
+import jFaaS.invokers.LambdaInvoker;
+import jFaaS.invokers.OpenWhiskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -8,7 +8,7 @@ import com.amazonaws.AbortedException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.lambda.model.AWSLambdaException;
 import com.amazonaws.services.lambda.model.ResourceNotFoundException;
-import jFaas.invokers.FaaSInvoker;
+import jFaaS.invokers.FaaSInvoker;
 
 public class LambdaMonitor implements InvokeMonitor{
 
