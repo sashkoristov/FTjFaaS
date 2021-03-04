@@ -7,6 +7,11 @@ package at.uibk.dps;
 public class AzureAccount {
     private String azureKey;
 
+    public AzureAccount(String azureKey){
+        this.azureKey = azureKey;
+
+    }
+
     public void setAzureKey(String azureKey){
         this.azureKey = azureKey;
 
