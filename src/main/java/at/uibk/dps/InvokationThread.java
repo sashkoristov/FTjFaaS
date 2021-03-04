@@ -6,6 +6,7 @@ import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
 import jFaaS.invokers.HTTPGETInvoker;
 import jFaaS.invokers.LambdaInvoker;
+import jFaaS.invokers.GoogleFunctionInvoker;
 import jFaaS.invokers.OpenWhiskInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,8 @@ public class InvokationThread implements Runnable {
 	private Exception exception;
 	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
+	private GoogleFunctionAccount googleFunctionAccount = null;
+	private AzureAccount azureAccount = null;
 	private IBMAccount ibmAccount = null;
 	private OpenWhiskInvoker ibmInvoker = null; // needed to cancel invocation
 	private Function function;
@@ -33,6 +36,12 @@ public class InvokationThread implements Runnable {
 	InvokationThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
+		this.function = function;
+	}
+
+	InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
 		this.function = function;
 	}
 
@@ -146,7 +155,10 @@ public class InvokationThread implements Runnable {
 			return "aws";
 		} else if (functionURL.contains("fc.aliyuncs.com")) {
 			return "alibaba";
+		} else if (functionURL.contains("cloudfunctions.net")) {
+			return "google";
 		}
+
 		// Inform Scheduler Provider Detection Failed
 		return "fail";
 	}
@@ -195,7 +207,17 @@ public class InvokationThread implements Runnable {
 			} else {
 				throw new CancelInvokeException();
 			}
-		default:
+
+		case "google":
+			GoogleFunctionInvoker googleFunctionInvoker = new GoogleFunctionInvoker(this.googleFunctionAccount.getServiceAccountKey(), "serviceAccount");
+			if (!this.cancel) {
+				GoogleFunctionMonitor googleFunctionMonitor = new GoogleFunctionMonitor();
+				return googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
+			} else {
+				throw new CancelInvokeException();
+			}
+
+			default:
 			// Tell Scheduler we cannot deal with this request;
 
 			InvalidResourceException exception = new InvalidResourceException("Detection of provider failed");
@@ -222,6 +244,14 @@ public class InvokationThread implements Runnable {
 	public void setIbmAccount(IBMAccount ibmAccount) {
 		this.ibmAccount = ibmAccount;
 	}
+
+	public GoogleFunctionAccount getGoogleFunctionAccount(){ return googleFunctionAccount;}
+
+	public void setGoogleFunctionAccount(GoogleFunctionAccount googleFunctionAccount){this.googleFunctionAccount = googleFunctionAccount;}
+
+	public AzureAccount getAzureAccount(){return azureAccount;}
+
+	public void setAzureAccount(AzureAccount azureAccount){ this.azureAccount = azureAccount;}
 
 	public synchronized boolean isFinished() {
 		return finished;
