@@ -18,6 +18,8 @@ public class MasterThread implements Runnable {
 	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
 	private IBMAccount ibmAccount = null;
+	private GoogleFunctionAccount googleFunctionAccount = null;
+	private AzureAccount azureAccount = null;
 	private Function function;
 	volatile private boolean cancel = false;
 	volatile private boolean finished = false;
@@ -27,7 +29,18 @@ public class MasterThread implements Runnable {
 	MasterThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
+		this.googleFunctionAccount = null;
+		this.azureAccount = null;
 		this.function = function;
+	}
+
+	MasterThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.function = function;
+		this.awsAccount = null;
+		this.ibmAccount = null;
+
 	}
 
 	public synchronized void stop() {
@@ -97,7 +110,13 @@ public class MasterThread implements Runnable {
 		List<InvokationThread> workerList = new ArrayList<InvokationThread>(functionList.size());
 		if (functionList != null && functionList.size() > 0) {
 			for (Function functionToBeInvoked : functionList) {
-				InvokationThread invocationThread = new InvokationThread(awsAccount, ibmAccount, functionToBeInvoked);
+				InvokationThread invocationThread = null;
+				if(!azureAccount.equals(null) && !googleFunctionAccount.equals(null)){
+					 invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, functionToBeInvoked);
+				}
+				else {
+					 invocationThread = new InvokationThread(awsAccount, ibmAccount, functionToBeInvoked);
+				}
 				Thread thread = new Thread(invocationThread);
 				thread.start();
 				workerList.add(invocationThread);
@@ -162,7 +181,13 @@ public class MasterThread implements Runnable {
 
 	@Override
 	public void run() {
-		InvokationThread invokThread = new InvokationThread(this.awsAccount, this.ibmAccount, function);
+		InvokationThread invokThread = null;
+		if(!azureAccount.equals(null) && !googleFunctionAccount.equals(null)) {
+			 invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, function);
+		}
+		else{
+			invokThread = new InvokationThread(this.awsAccount, this.ibmAccount, function);
+		}
 		this.invokThread = invokThread; // so we can stop invocation
 		this.invokThread.run(); // Try to invoke the Function in this Thread;
 								// Will return if canceled , finished or failed
@@ -247,4 +272,12 @@ public class MasterThread implements Runnable {
 	public synchronized void setFinished(boolean finished) {
 		this.finished = finished;
 	}
+
+	public GoogleFunctionAccount getGoogleFunctionAccount() { return googleFunctionAccount; }
+
+	public void setGoogleFunctionAccount(GoogleFunctionAccount googleFunctionAccount) { this.googleFunctionAccount = googleFunctionAccount; }
+
+	public AzureAccount getAzureAccount() { return azureAccount; }
+
+	public void setAzureAccount(AzureAccount azureAccount) { this.azureAccount = azureAccount; }
 }
