@@ -7,6 +7,10 @@ package at.uibk.dps;
 public class GoogleFunctionAccount {
     private String serviceAccountKey;
 
+    public GoogleFunctionAccount(){
+
+    }
+
     public GoogleFunctionAccount(String serviceAccountKey){
         this.serviceAccountKey = serviceAccountKey;
 
