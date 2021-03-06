@@ -39,7 +39,7 @@ public class InvokationThread implements Runnable {
 		this.function = function;
 	}
 
-	InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function){
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function){
 		this.googleFunctionAccount = googleFunctionAccount;
 		this.azureAccount = azureAccount;
 		this.function = function;
@@ -119,10 +119,15 @@ public class InvokationThread implements Runnable {
 
 	@Override
 	public void run() {
+		System.out.println("Start of invocationThread Run");
+		System.out.println("Trying to execute function with url " + this.function.getUrl());
 		this.thread = Thread.currentThread();
+		System.out.println(this.thread);
 		try {
 			// Try to invoke function
+			System.out.println("Trying to Invoke Function");
 			this.result = invokeFunctionOnCorrectProvider(this.function);
+			System.out.println("invokeFunction done");
 		} catch (CancelInvokeException e) {
 			this.result = null;
 			logger.info("Invocation in " +thread.toString() + "has been canceled.");
@@ -157,6 +162,8 @@ public class InvokationThread implements Runnable {
 			return "alibaba";
 		} else if (functionURL.contains("cloudfunctions.net")) {
 			return "google";
+		} else if (functionURL.contains("azurewebsites.net")) {
+			return "azure";
 		}
 
 		// Inform Scheduler Provider Detection Failed
@@ -209,13 +216,22 @@ public class InvokationThread implements Runnable {
 			}
 
 		case "google":
-			GoogleFunctionInvoker googleFunctionInvoker = new GoogleFunctionInvoker(this.googleFunctionAccount.getServiceAccountKey(), "serviceAccount");
+			GoogleFunctionInvoker googleFunctionInvoker = null;
+			if(this.googleFunctionAccount.getServiceAccountKey() != null) {
+				 googleFunctionInvoker = new GoogleFunctionInvoker(this.googleFunctionAccount.getServiceAccountKey(), "serviceAccount");
+			} else{
+				googleFunctionInvoker = new GoogleFunctionInvoker();
+			}
 			if (!this.cancel) {
 				GoogleFunctionMonitor googleFunctionMonitor = new GoogleFunctionMonitor();
-				return googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
+				String returnValue= googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
+				return returnValue;
 			} else {
 				throw new CancelInvokeException();
 			}
+		case "azure":
+			System.out.println("azure detected");
+
 
 			default:
 			// Tell Scheduler we cannot deal with this request;

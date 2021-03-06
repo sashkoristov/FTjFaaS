@@ -20,7 +20,17 @@ public class Function {
 	private FaultToleranceSettings FTSettings;
 	private ConstraintSettings constraints;
 	private double successRate = 0; // Only used for the Scheduler!
-	
+
+
+	public Function(String url,Map<String, Object> functionInputs){
+		super();
+		this.url = url;
+		this.type = null;
+		this.functionInputs = functionInputs;
+		this.constraints = null;
+		this.FTSettings = null;
+	}
+
 	public Function(String url,String type,Map<String, Object> functionInputs){
 		super();
 		this.url = url;
@@ -66,6 +76,13 @@ public class Function {
 		this.functionInputs = functionInputs;
 		this.FTSettings = FTSettings;
 		this.constraints = constraints;
+	}
+
+	public Function(String url, Map<String, Object> functionInputs , FaultToleranceSettings FTSettings){
+		super();
+		this.url = url;
+		this.functionInputs = functionInputs;
+		this.FTSettings = FTSettings;
 	}
 	
 	
