@@ -4,10 +4,7 @@ import at.uibk.dps.database.SQLLiteDatabase;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
-import jFaaS.invokers.HTTPGETInvoker;
-import jFaaS.invokers.LambdaInvoker;
-import jFaaS.invokers.GoogleFunctionInvoker;
-import jFaaS.invokers.OpenWhiskInvoker;
+import jFaaS.invokers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,7 +227,19 @@ public class InvokationThread implements Runnable {
 				throw new CancelInvokeException();
 			}
 		case "azure":
-			System.out.println("azure detected");
+			AzureInvoker azureInvoker;
+			if(this.azureAccount.getAzureKey() != null) {
+				azureInvoker = new AzureInvoker(this.azureAccount.getAzureKey());
+			} else{
+				azureInvoker = new AzureInvoker();
+			}
+			if (!this.cancel) {
+				AzureMonitor azureMonitor = new AzureMonitor();
+				String returnValue= azureMonitor.monitoredInvoke(azureInvoker, function);
+				return returnValue;
+			} else {
+				throw new CancelInvokeException();
+			}
 
 
 			default:

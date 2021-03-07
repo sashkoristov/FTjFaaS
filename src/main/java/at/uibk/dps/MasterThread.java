@@ -183,16 +183,7 @@ public class MasterThread implements Runnable {
 	@Override
 	public void run() {
 		InvokationThread invokThread = null;
-		System.out.println("Inside run of Master. Do I have the accounts?");
 
-		if(googleFunctionAccount == null){
-			System.out.println("Google account is null");
-		}
-
-		if(azureAccount == null){
-			System.out.println("Azure account is null");
-
-		}
 		if(this.azureAccount != null && this.googleFunctionAccount != null) {
 			System.out.println("Run of Master entered");
 			 invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, function);

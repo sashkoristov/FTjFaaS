@@ -46,17 +46,7 @@ public class FaultToleranceEngine {
 	public String InvokeFunctionFT(Function function) throws InvokationFailureException, LatestStartingTimeException,
 			LatestFinishingTimeException, MaxRunningTimeException {
 		if (function != null) {
-			System.out.println("Engine here. FUnction doesnt seem to be null.");
-			if(this.getGoogleFunctionAccount() == null){
-				System.out.println("googelaccount is null");
-			}else{System.out.println("google account is not nnullllll ");}
-			if(this.getAzureAccount() == null){
-				System.out.println("azureaccount is null");
-			}if(this.getAwsAccount() == null){
-				System.out.println("At least aws key is null as well");
-			}if(this.getIbmAccount() == null){
-				System.out.println("At least ibmkey is null as well");
-			}
+
 			if (function.hasConstraintSet()) {
 				// constraints set
 				Timestamp timeAtStart = new Timestamp(System.currentTimeMillis());
