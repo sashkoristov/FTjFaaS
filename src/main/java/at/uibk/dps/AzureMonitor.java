@@ -1,6 +1,7 @@
 package at.uibk.dps;
 
 import at.uibk.dps.exception.AuthenticationFailedException;
+import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.exception.MemoryExceededException;
 import at.uibk.dps.exception.TimeLimitException;
 import com.google.api.client.http.HttpResponseException;
@@ -37,12 +38,12 @@ public class AzureMonitor implements InvokeMonitor{
                 throw new AuthenticationFailedException(e.getMessage());
             }
             else if(statusCode== 502){
-                System.out.println("MemoryExceededException");
+                System.out.println("TimeLimitException");
                 throw new TimeLimitException(e.getMessage());
 
             }
             else if(statusCode==500){
-                System.out.println("TimeLimitException");
+                System.out.println("MemoryExceededException");
                 throw new MemoryExceededException(e.getMessage());
 
             } else{
@@ -52,7 +53,7 @@ public class AzureMonitor implements InvokeMonitor{
             }
 
         }catch(Exception e){
-            System.out.println("Some other Exception");
+            System.out.println("Some other Exception occured");
             throw e;
         }
 
@@ -60,7 +61,7 @@ public class AzureMonitor implements InvokeMonitor{
 
     }
 
-    public static void main(String[] args) throws Exception {
+    /*public static void main(String[] args) throws Exception {
 
 
 
@@ -85,11 +86,12 @@ public class AzureMonitor implements InvokeMonitor{
 
 
 
-        InvokationThread invok = new InvokationThread(accgoogle, acc, function);
-        invok.run();
+        try{InvokationThread invok = new InvokationThread(accgoogle, acc, function);
+
+        invok.run();}catch(Exception e){e.getMessage();}
 
 
-    }
+    }*/
 
 
 }

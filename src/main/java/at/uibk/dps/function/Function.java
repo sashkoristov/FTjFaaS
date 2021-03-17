@@ -22,14 +22,14 @@ public class Function {
 	private double successRate = 0; // Only used for the Scheduler!
 
 
-	public Function(String url,Map<String, Object> functionInputs){
+	/*public Function(String url,Map<String, Object> functionInputs){
 		super();
 		this.url = url;
 		this.type = null;
 		this.functionInputs = functionInputs;
 		this.constraints = null;
 		this.FTSettings = null;
-	}
+	}*/
 
 	public Function(String url,String type,Map<String, Object> functionInputs){
 		super();
@@ -78,12 +78,12 @@ public class Function {
 		this.constraints = constraints;
 	}
 
-	public Function(String url, Map<String, Object> functionInputs , FaultToleranceSettings FTSettings){
+	/*public Function(String url, Map<String, Object> functionInputs , FaultToleranceSettings FTSettings){
 		super();
 		this.url = url;
 		this.functionInputs = functionInputs;
 		this.FTSettings = FTSettings;
-	}
+	}*/
 	
 	
 	 public String toString(){ 
