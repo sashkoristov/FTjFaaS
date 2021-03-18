@@ -30,26 +30,21 @@ public class GoogleFunctionMonitor implements InvokeMonitor{
             int statusCode = e.getStatusCode();
 
             if(statusCode == 403){
-                System.out.println("AuthenticationFailedException");
                 throw new AuthenticationFailedException(e.getMessage());
             }
             else if(statusCode== 503){
-                System.out.println("MemoryExceededException");
                 throw new MemoryExceededException(e.getMessage());
 
             }
             else if(statusCode==408){
-                System.out.println("TimeLimitException");
                 throw new TimeLimitException(e.getMessage());
 
             } else{
-                System.out.println("Other HTTPException");
                 throw e;
 
             }
 
         }catch(Exception e){
-            System.out.println("Some other Exception");
             throw e;
         }
 
