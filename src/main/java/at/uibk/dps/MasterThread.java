@@ -185,7 +185,6 @@ public class MasterThread implements Runnable {
 		InvokationThread invokThread = null;
 
 		if(this.azureAccount != null && this.googleFunctionAccount != null) {
-			System.out.println("Run of Master entered");
 			 invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, function);
 		}
 		else{
@@ -196,13 +195,11 @@ public class MasterThread implements Runnable {
 								// Will return if canceled , finished or failed
 
 		if (invokThread.getException() == null) {
-			System.out.println("Invok hasn`t returned an exception");
 			// set correct result and terminate thread
 			this.result = this.invokThread.getResult();
 			this.finished = true;
 			return;
 		} else { // check FT Settings because first invocation has failed.
-			System.out.println("Message" + invokThread.getException().getMessage());
 			if (this.function.hasFTSet()) {
 				int i = 0;
 				logger.info("##############  First invokation has failed retrying "+function.getFTSettings().getRetries()+ " times.  ##############");

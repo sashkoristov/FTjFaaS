@@ -116,28 +116,19 @@ public class InvokationThread implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("Start of invocationThread Run");
-		System.out.println("Trying to execute function with url " + this.function.getUrl());
 		this.thread = Thread.currentThread();
-		System.out.println(this.thread);
 		try {
 			// Try to invoke function
-			System.out.println("Trying to Invoke Function");
 			this.result = invokeFunctionOnCorrectProvider(this.function);
-			System.out.println("invokeFunction done");
 		} catch (CancelInvokeException e) {
 			this.result = null;
 			logger.info("Invocation in " +thread.toString() + "has been canceled.");
-			//System.out.println("Invocation in " +thread.toString() + "has been canceled.");
-			//System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
 		} catch (Exception e) {
 			this.result = null;
 			logger.error("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
-			//System.out.println("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
-			//System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
