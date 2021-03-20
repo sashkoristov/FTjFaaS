@@ -42,6 +42,30 @@ public class InvokationThread implements Runnable {
 		this.function = function;
 	}
 
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount,  Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.awsAccount = awsAccount;
+		this.function = function;
+	}
+
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, IBMAccount ibmAccount,  Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.ibmAccount = ibmAccount;
+		this.function = function;
+	}
+
+
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount,  Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.awsAccount = awsAccount;
+		this.ibmAccount = ibmAccount;
+		this.function = function;
+	}
+
+
 	/**
 	 * detects the region of a Function on AWS
 	 * throws InvalidResourceException if region can not be detected

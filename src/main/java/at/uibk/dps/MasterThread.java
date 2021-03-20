@@ -43,6 +43,31 @@ public class MasterThread implements Runnable {
 
 	}
 
+	MasterThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount  = azureAccount;
+		this.awsAccount = awsAccount;
+		this.function = function;
+
+	}
+
+	MasterThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, IBMAccount ibmAccount, Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount  = azureAccount;
+		this.ibmAccount = ibmAccount;
+		this.function = function;
+
+	}
+
+	MasterThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount, Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount  = azureAccount;
+		this.awsAccount = awsAccount;
+		this.ibmAccount = ibmAccount;
+		this.function = function;
+
+	}
+
 	public synchronized void stop() {
 		if (this.invokThread != null) {
 			this.invokThread.stop();
@@ -111,8 +136,17 @@ public class MasterThread implements Runnable {
 		if (functionList != null && functionList.size() > 0) {
 			for (Function functionToBeInvoked : functionList) {
 				InvokationThread invocationThread = null;
-				if(this.azureAccount != null && this.googleFunctionAccount != null) {
 
+				if(this.awsAccount != null && this.ibmAccount!= null && this.googleFunctionAccount != null && this.azureAccount != null){
+					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, awsAccount, ibmAccount, functionToBeInvoked);
+				}
+				else if(this.awsAccount != null && this.googleFunctionAccount != null && this.azureAccount != null){
+					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, awsAccount, functionToBeInvoked);
+				}
+				else if(this.azureAccount != null && this.googleFunctionAccount != null && this.ibmAccount != null){
+					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, ibmAccount, functionToBeInvoked);
+				}
+				else if(this.azureAccount != null && this.googleFunctionAccount != null) {
 					 invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, functionToBeInvoked);
 				}
 				else {
@@ -184,10 +218,15 @@ public class MasterThread implements Runnable {
 	public void run() {
 		InvokationThread invokThread = null;
 
-		if(this.azureAccount != null && this.googleFunctionAccount != null) {
-			 invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, function);
-		}
-		else{
+		if(this.azureAccount != null && this.googleFunctionAccount != null   && this.awsAccount != null && this.ibmAccount != null) {
+			 invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, this.awsAccount, this.ibmAccount, function);
+		} else if(this.awsAccount != null && this.googleFunctionAccount != null && this.azureAccount != null) {
+			invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, this.awsAccount, function);
+		}else if(this.azureAccount != null && this.googleFunctionAccount != null && this.ibmAccount != null){
+			invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, this.ibmAccount, function);
+		}else if(this.azureAccount != null && this.googleFunctionAccount != null) {
+			invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, function);
+		} else{
 			invokThread = new InvokationThread(this.awsAccount, this.ibmAccount, function);
 		}
 		this.invokThread = invokThread; // so we can stop invocation
