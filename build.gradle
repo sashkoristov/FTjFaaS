@@ -32,7 +32,8 @@ dependencies {
     implementation 'commons-io:commons-io:2.4'
     implementation 'com.github.docker-java:docker-java:3.0.14'
     implementation 'org.slf4j:slf4j-simple:1.6.1'
-    compile fileTree(dir: 'externalJars', include: ['*.jar'])
+    implementation 'com.google.api-client:google-api-client:1.31.2'
+    implementation fileTree(dir: 'externalJars', include: ['*.jar'])
 }
 
 group = 'at.uibk.dps'
@@ -47,7 +48,7 @@ publishing {
 }
 
 shadowJar {
-    baseName = 'FTjFaaS'
+    archiveBaseName = 'FTjFaaS'
     classifier = null
-    version = null
+    archiveVersion = null
 }

@@ -4,9 +4,7 @@ import at.uibk.dps.database.SQLLiteDatabase;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
-import jFaaS.invokers.HTTPGETInvoker;
-import jFaaS.invokers.LambdaInvoker;
-import jFaaS.invokers.OpenWhiskInvoker;
+import jFaaS.invokers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +21,8 @@ public class InvokationThread implements Runnable {
 	private Exception exception;
 	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
+	private GoogleFunctionAccount googleFunctionAccount = null;
+	private AzureAccount azureAccount = null;
 	private IBMAccount ibmAccount = null;
 	private OpenWhiskInvoker ibmInvoker = null; // needed to cancel invocation
 	private Function function;
@@ -35,6 +35,36 @@ public class InvokationThread implements Runnable {
 		this.ibmAccount = ibmAccount;
 		this.function = function;
 	}
+
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.function = function;
+	}
+
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount,  Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.awsAccount = awsAccount;
+		this.function = function;
+	}
+
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, IBMAccount ibmAccount,  Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.ibmAccount = ibmAccount;
+		this.function = function;
+	}
+
+
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount,  Function function){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.awsAccount = awsAccount;
+		this.ibmAccount = ibmAccount;
+		this.function = function;
+	}
+
 
 	/**
 	 * detects the region of a Function on AWS
@@ -117,16 +147,12 @@ public class InvokationThread implements Runnable {
 		} catch (CancelInvokeException e) {
 			this.result = null;
 			logger.info("Invocation in " +thread.toString() + "has been canceled.");
-			//System.out.println("Invocation in " +thread.toString() + "has been canceled.");
-			//System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
 		} catch (Exception e) {
 			this.result = null;
 			logger.error("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
-			//System.out.println("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
-			//System.out.flush();
 			this.exception = e;
 			this.finished = true;
 			return;
@@ -146,7 +172,12 @@ public class InvokationThread implements Runnable {
 			return "aws";
 		} else if (functionURL.contains("fc.aliyuncs.com")) {
 			return "alibaba";
+		} else if (functionURL.contains("cloudfunctions.net")) {
+			return "google";
+		} else if (functionURL.contains("azurewebsites.net")) {
+			return "azure";
 		}
+
 		// Inform Scheduler Provider Detection Failed
 		return "fail";
 	}
@@ -195,7 +226,38 @@ public class InvokationThread implements Runnable {
 			} else {
 				throw new CancelInvokeException();
 			}
-		default:
+
+		case "google":
+			GoogleFunctionInvoker googleFunctionInvoker = null;
+			if(this.googleFunctionAccount.getServiceAccountKey() != null) {
+				 googleFunctionInvoker = new GoogleFunctionInvoker(this.googleFunctionAccount.getServiceAccountKey(), "serviceAccount");
+			} else{
+				googleFunctionInvoker = new GoogleFunctionInvoker();
+			}
+			if (!this.cancel) {
+				GoogleFunctionMonitor googleFunctionMonitor = new GoogleFunctionMonitor();
+				String returnValue= googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
+				return returnValue;
+			} else {
+				throw new CancelInvokeException();
+			}
+		case "azure":
+			AzureInvoker azureInvoker;
+			if(this.azureAccount.getAzureKey() != null) {
+				azureInvoker = new AzureInvoker(this.azureAccount.getAzureKey());
+			} else{
+				azureInvoker = new AzureInvoker();
+			}
+			if (!this.cancel) {
+				AzureMonitor azureMonitor = new AzureMonitor();
+				String returnValue= azureMonitor.monitoredInvoke(azureInvoker, function);
+				return returnValue;
+			} else {
+				throw new CancelInvokeException();
+			}
+
+
+			default:
 			// Tell Scheduler we cannot deal with this request;
 
 			InvalidResourceException exception = new InvalidResourceException("Detection of provider failed");
@@ -222,6 +284,14 @@ public class InvokationThread implements Runnable {
 	public void setIbmAccount(IBMAccount ibmAccount) {
 		this.ibmAccount = ibmAccount;
 	}
+
+	public GoogleFunctionAccount getGoogleFunctionAccount(){ return googleFunctionAccount;}
+
+	public void setGoogleFunctionAccount(GoogleFunctionAccount googleFunctionAccount){this.googleFunctionAccount = googleFunctionAccount;}
+
+	public AzureAccount getAzureAccount(){return azureAccount;}
+
+	public void setAzureAccount(AzureAccount azureAccount){ this.azureAccount = azureAccount;}
 
 	public synchronized boolean isFinished() {
 		return finished;

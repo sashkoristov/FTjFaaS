@@ -15,14 +15,47 @@ import at.uibk.dps.function.Function;
 public class FaultToleranceEngine {
 	private AWSAccount awsAccount;
 	private IBMAccount ibmAccount;
+	private GoogleFunctionAccount googleFunctionAccount;
+	private AzureAccount azureAccount;
 
-	public FaultToleranceEngine(AWSAccount awsAccount, IBMAccount ibmAccount) {
-		
+
+	public FaultToleranceEngine (AWSAccount awsAccount, IBMAccount ibmAccount) {
+		this.awsAccount = awsAccount;
+		this.ibmAccount = ibmAccount;
+		this.googleFunctionAccount = null;
+		this.azureAccount = null;
+	}
+
+	public FaultToleranceEngine(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount) {
+
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.ibmAccount = null;
+		this.awsAccount = null;
+	}
+	public FaultToleranceEngine(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
 	}
+	public FaultToleranceEngine(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.awsAccount = awsAccount;
+	}
 
-	
+	public FaultToleranceEngine(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, IBMAccount ibmAccount){
+		this.googleFunctionAccount = googleFunctionAccount;
+		this.azureAccount = azureAccount;
+		this.ibmAccount = ibmAccount;
+	}
+
+
+
+
+
+
 	/**
 	 * Function to invoke a Function with fault-tolerance and/or constraints
 	 * Will spawn multiple worker threads if necessary
@@ -32,6 +65,7 @@ public class FaultToleranceEngine {
 	public String InvokeFunctionFT(Function function) throws InvokationFailureException, LatestStartingTimeException,
 			LatestFinishingTimeException, MaxRunningTimeException {
 		if (function != null) {
+
 			if (function.hasConstraintSet()) {
 				// constraints set
 				Timestamp timeAtStart = new Timestamp(System.currentTimeMillis());
@@ -43,7 +77,19 @@ public class FaultToleranceEngine {
 							&& function.getConstraints().hasMaxRunningTime() == false) {
 						// neither LFT nor MRT set so we will not have to cancel
 						// Invocation (we do not need extra thread)
-						MasterThread master = new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+						MasterThread master = null;
+
+						if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null && this.ibmAccount != null){
+							master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), this.getIbmAccount(), function);
+						} else if(this.googleFunctionAccount != null && this.azureAccount!=null && this.ibmAccount != null){
+							master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getIbmAccount(), function);
+						} else if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null ){
+							master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), function);
+						} else if(this.azureAccount != null && this.googleFunctionAccount != null) {
+							 master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), function);
+						}else{
+							master= new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+						}
 						master.run();
 						// Current Thread will block until it has finished running
 						if (master.getResult() == null) {
@@ -53,7 +99,18 @@ public class FaultToleranceEngine {
 						}
 					}
 				}
-				MasterThread master = new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+				MasterThread master = null;
+				if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null && this.ibmAccount != null){
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), this.getIbmAccount(), function);
+				} else if(this.googleFunctionAccount != null && this.azureAccount!=null && this.ibmAccount != null){
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getIbmAccount(), function);
+				} else if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null ){
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), function);
+				} else if(this.azureAccount != null && this.googleFunctionAccount != null) {
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), function);
+				}else{
+					master= new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+				}
 				Thread thread = new Thread(master);
 				thread.start(); // start new thread to run because we have to be
 								// able to cancel
@@ -90,7 +147,20 @@ public class FaultToleranceEngine {
 			} else {
 				// no constraints. Just invoke in current thread. (we do not
 				// need to cancel)
-				MasterThread master = new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+				MasterThread master = null;
+
+				if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null && this.ibmAccount != null){
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), this.getIbmAccount(), function);
+				} else if(this.googleFunctionAccount != null && this.azureAccount!=null && this.ibmAccount != null){
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getIbmAccount(), function);
+				} else if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null ){
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), function);
+				} else if(this.azureAccount != null && this.googleFunctionAccount != null) {
+					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), function);
+				}else{
+					master= new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+				}
+
 				master.run(); // will block until it returns
 				if (master.getResult() == null) {
 					throw new InvokationFailureException("Invokation has failed");
@@ -118,5 +188,14 @@ public class FaultToleranceEngine {
 	public void setIbmAccount(IBMAccount ibmAccount) {
 		this.ibmAccount = ibmAccount;
 	}
+
+
+	public GoogleFunctionAccount getGoogleFunctionAccount() { return this.googleFunctionAccount; }
+
+	public void setGoogleFunctionAccount(GoogleFunctionAccount googleFunctionAccount) { this.googleFunctionAccount = googleFunctionAccount; }
+
+	public AzureAccount getAzureAccount() { return this.azureAccount; }
+
+	public void setAzureAccount(AzureAccount azureAccount) { this.azureAccount = azureAccount; }
 
 }
