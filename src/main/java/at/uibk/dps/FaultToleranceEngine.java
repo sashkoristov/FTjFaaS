@@ -1,12 +1,12 @@
 package at.uibk.dps;
 
-import java.sql.Timestamp;
-
 import at.uibk.dps.exception.InvokationFailureException;
 import at.uibk.dps.exception.LatestFinishingTimeException;
 import at.uibk.dps.exception.LatestStartingTimeException;
 import at.uibk.dps.exception.MaxRunningTimeException;
 import at.uibk.dps.function.Function;
+
+import java.sql.Timestamp;
 
 /**
  * Class to invoke Functions with fault-tolerance and/or constraints
@@ -39,11 +39,11 @@ public class FaultToleranceEngine {
 					if (timeAtStart.after(function.getConstraints().getLatestStartingTime())) {
 						throw new LatestStartingTimeException("latestStartingTime constraint missed!");
 					}
-					if (function.getConstraints().hasLatestFinishingTime() == false
-							&& function.getConstraints().hasMaxRunningTime() == false) {
+					if (!function.getConstraints().hasLatestFinishingTime()
+							&& !function.getConstraints().hasMaxRunningTime()) {
 						// neither LFT nor MRT set so we will not have to cancel
 						// Invocation (we do not need extra thread)
-						MasterThread master = new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+						MasterThread master = new MasterThread(getAwsAccount(), getIbmAccount(), function);
 						master.run();
 						// Current Thread will block until it has finished running
 						if (master.getResult() == null) {
@@ -53,7 +53,7 @@ public class FaultToleranceEngine {
 						}
 					}
 				}
-				MasterThread master = new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+				MasterThread master = new MasterThread(getAwsAccount(), getIbmAccount(), function);
 				Thread thread = new Thread(master);
 				thread.start(); // start new thread to run because we have to be
 								// able to cancel
@@ -90,7 +90,7 @@ public class FaultToleranceEngine {
 			} else {
 				// no constraints. Just invoke in current thread. (we do not
 				// need to cancel)
-				MasterThread master = new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+				MasterThread master = new MasterThread(getAwsAccount(), getIbmAccount(), function);
 				master.run(); // will block until it returns
 				if (master.getResult() == null) {
 					throw new InvokationFailureException("Invokation has failed");

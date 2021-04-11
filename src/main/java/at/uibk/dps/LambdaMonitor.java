@@ -1,5 +1,4 @@
 package at.uibk.dps;
-import java.sql.Timestamp;
 
 import at.uibk.dps.database.SQLLiteDatabase;
 import at.uibk.dps.exception.*;
@@ -9,38 +8,43 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.lambda.model.AWSLambdaException;
 import com.amazonaws.services.lambda.model.ResourceNotFoundException;
 import jFaaS.invokers.FaaSInvoker;
+import jFaaS.invokers.LambdaInvoker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class LambdaMonitor implements InvokeMonitor{
+import java.sql.Timestamp;
 
-	/**
-	 * Method to invoke Lambda Functions with Monitoring (using dpsinvoker.jar)
-	 * Parses errors and tries to identify known Exceptions to throw Returns
-	 * correct value or throws Exception
-	 */
-	@Override
-	public String monitoredInvoke(FaaSInvoker invoker, Function function)
-			throws Exception {
-		String returnValue;
-		Timestamp returnTime = null, invokeTime = null;
-		SQLLiteDatabase DB = null;
-		if(Configuration.enableDatabase){
-			DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
-		}
-		try {
-			// save timestamp and invoke
-			invokeTime = new Timestamp(System.currentTimeMillis());
-			returnValue = invoker.invokeFunction(function.getUrl(), function.getFunctionInputs()).toString();
-			assert returnValue != null;
+public class LambdaMonitor implements InvokeMonitor {
 
-		} catch (AbortedException e) { //has been canceled
-			returnTime = new Timestamp(System.currentTimeMillis());
-			if(Configuration.enableDatabase){
-				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, "Canceled", null);
-			}
-			throw new CancelInvokeException();
-		}
+    final static Logger logger = LoggerFactory.getLogger(LambdaMonitor.class);
 
-		catch (ResourceNotFoundException e) { // InvalidResourceException
+    /**
+     * Method to invoke Lambda Functions with Monitoring (using dpsinvoker.jar) Parses errors and tries to identify
+     * known Exceptions to throw Returns correct value or throws Exception
+     */
+    @Override
+    public String monitoredInvoke(FaaSInvoker invoker, Function function)
+            throws Exception {
+        String returnValue;
+        Timestamp returnTime = null, invokeTime = null;
+        SQLLiteDatabase DB = null;
+        if (Configuration.enableDatabase) {
+            DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
+        }
+        try {
+            // save timestamp and invoke
+            invokeTime = new Timestamp(System.currentTimeMillis());
+            returnValue = invoker.invokeFunction(function.getUrl(), function.getFunctionInputs()).toString();
+            logger.info("Function has {} MB of assigned memory.", ((LambdaInvoker) invoker).getAssignedMemory(function.getUrl()));
+            assert returnValue != null;
+
+        } catch (AbortedException e) { //has been canceled
+            returnTime = new Timestamp(System.currentTimeMillis());
+            if (Configuration.enableDatabase) {
+                DB.addInvocation(function.getUrl(), function.getType(), "AWS", function.getRegion(), invokeTime, returnTime, "Canceled", null);
+            }
+            throw new CancelInvokeException();
+        } catch (ResourceNotFoundException e) { // InvalidResourceException
 			returnTime = new Timestamp(System.currentTimeMillis());
 			if(Configuration.enableDatabase){
 				DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, "InvalidResourceException", e.getMessage());
@@ -109,29 +113,29 @@ public class LambdaMonitor implements InvokeMonitor{
 		
 		int searchIndex2 = returnValue.indexOf("\"errorMessage\"");
 		if (searchIndex2 != -1) {
-			if (returnValue.contains("Task timed out")) {// Timed out
-				TimedOutException exception = new TimedOutException(returnValue);
-				if(Configuration.enableDatabase){
-					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,exception.getClass().getName(), returnValue);
-				}
-				throw exception;
-			} else {
-				// save to DB
-				if(Configuration.enableDatabase){
-					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,parseError(returnValue, searchIndex), returnValue);
-				}
-				throw new Exception(returnValue);
-			}
-		}
+            if (returnValue.contains("Task timed out")) {// Timed out
+                TimedOutException exception = new TimedOutException(returnValue);
+                if (Configuration.enableDatabase) {
+                    DB.addInvocation(function.getUrl(), function.getType(), "AWS", function.getRegion(), invokeTime, returnTime, exception.getClass().getName(), returnValue);
+                }
+                throw exception;
+            } else {
+                // save to DB
+                if (Configuration.enableDatabase) {
+                    DB.addInvocation(function.getUrl(), function.getType(), "AWS", function.getRegion(), invokeTime, returnTime, parseError(returnValue, searchIndex), returnValue);
+                }
+                throw new Exception(returnValue);
+            }
+        }
 
-		// Correct Return value without Errors
-		if(Configuration.enableDatabase){
-			DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,"OK", null);
-		}
-		return returnValue;
-	};
+        // Correct Return value without Errors
+        if (Configuration.enableDatabase) {
+            DB.addInvocation(function.getUrl(), function.getType(), "AWS", function.getRegion(), invokeTime, returnTime, "OK", null);
+        }
+        return returnValue;
+    }
 
-	/**
+    /**
 	 * Method Parses errorType from returnValue containing an Error Returns
 	 * String of errorType
 	 */
