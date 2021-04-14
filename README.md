@@ -1,11 +1,28 @@
 # Fault Tolerance jFaaS (FTjFaaS)
 
-## The DB on which FTjFaaS is based should contain the following 4 tables:
+This project provides a middleware service for monitoring the execution of individual functions of a serverless application. It supports monitoring of functions on all widely-known FaaS systems AWS Lambda, IBM Cloud Functions, Google Cloud Functions, and Microzoft Azure Functions.
 
-- **Functions** : This Table is used to store all the main and alternative function links. It is where the scheduler will check what alternatives are available for a given main implementation. You will have to add the resource links you want to this Table for the scheduler to use them when creating an alternative Strategy.
+*FTjFaaS* is an integrated part of the [xAFCL Enactment Engine (xAFCL EE)](https://github.com/sashkoristov/enactmentengine), which can simultaneously execute individual functions of a serverless workflow application (Function Choreographies - *FCs*) across multiple FaaS systems and define and apply fault tolerance for each function of the FC.
 
-- **Invocations** : This Table is used to store the data of all past invocations. The monitored Functions invocations are saved here. When the Scheduler has gotten the list of alternatives from the "Functions" Table he will calculate each alternatives availability using the data in this ("Invocations") Table. If no data is set in the Invocations table the availability will be assumed to be 1! This table can be filled using the "DataBaseFiller" contained in the EnactmentEngine.
+*FTjFaaS* integrates the component [jFaaS](https://github.com/sashkoristov/jFaaS) for portable execution of individual FC functions (supported all widely-known FaaS systems AWS Lambda, IBM Cloud Functions, Google Cloud Functions, Microzoft Azure Functions, and Alibaba).
 
-- **Regions** :This Table can be used if you want to set an individual availability for a region. This availability value will then be considered by the scheduler when calculating the availability of the various functions. If no availability is set for a region in the "Regions" Table it will be assumed to be 1.0 in the calculation
+## *FTjFaaS design*
 
-- **Simulated Availability** :This Table can be used to simulate failures when running a workflow. You can set a wanted simulated availability for every function in this table. The FunctionNode of the EE will then pass the wanted simulated availability as a parameter "availability". This availability parameter will make my testing functions fail with a given availability. An example of my Testing Function can be seen at "arn:aws:lambda:eu-central-1:170392512081:function:TestFunction".
+*FTjFaaS* introduces a single `InvokeMonitor` interface, which is implemented in LambdaMonitor, OpenWhiskMonitor, GoogleFunctionMonitor, and AzureMonitor classes for each FaaS system respectively. 
+
+## Build
+````
+gradle shadowJar
+````
+The generated **FTjFaaS.jar** file can be found in the **build/libs/** folder.
+
+## Contributions
+
+Several bachelor theses at department of computer science, University of Innsbruck, supervised by Dr. Sashko Ristov contributed to this project:
+
+- "Fault-tolerant execution of serverless functions across multiple FaaS systems", Matteo Bernard, Battaglin, SS2020 (AWS and IBM implementations)
+- "G2GA: Portable execution of workflows in Google Cloud Functions across multiple FaaS platforms", Anna Kapeller and Felix Petschko, SS2021 (Google and Azure implementations)
+
+## Support
+
+If you need any additional information, please do not hesitate to contact sashko@dps.uibk.ac.at.
