@@ -1,8 +1,11 @@
 package at.uibk.dps;
 
-import at.uibk.dps.exception.*;
-import at.uibk.dps.function.Function;
 import at.uibk.dps.database.SQLLiteDatabase;
+import at.uibk.dps.exception.AuthenticationFailedException;
+import at.uibk.dps.exception.InvalidResourceException;
+import at.uibk.dps.exception.SyntaxErrorException;
+import at.uibk.dps.exception.TimeLimitException;
+import at.uibk.dps.function.Function;
 import jFaaS.invokers.FaaSInvoker;
 import jFaaS.invokers.OpenWhiskInvoker;
 
@@ -32,9 +35,9 @@ public class OpenWhiskMonitor implements InvokeMonitor{
 			assert returnValue != null;
 		} catch (Exception e) { // could be canceled invokation
 			returnTime = new Timestamp(System.currentTimeMillis());
-			if(Configuration.enableDatabase){
-				DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
-			}
+//			if(Configuration.enableDatabase){
+//				DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+//			}
 			throw e;
 		}// catch all Exceptions and pass them up the chain
 
@@ -45,24 +48,24 @@ public class OpenWhiskMonitor implements InvokeMonitor{
 				parseAndThrowException(returnValue);
 			} catch (SyntaxErrorException | InvalidResourceException | AuthenticationFailedException
 					| TimeLimitException e) {
-				if(Configuration.enableDatabase){
-					DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
-				}
+//				if(Configuration.enableDatabase){
+//					DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+//				}
 				throw e;
 			} catch (Exception e) {
-				if(Configuration.enableDatabase){
-					DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
-				}
+//				if(Configuration.enableDatabase){
+//					DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,e.getClass().getName(), e.getMessage());
+//				}
 				throw e;
 			}
 		}
 
 		// Correct Return value without Errors
-		if(Configuration.enableDatabase){
-			DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"OK", null);
-		}
+//		if(Configuration.enableDatabase){
+//			DB.addInvocation(function.getUrl(),function.getType(),"IBM",function.getRegion(), invokeTime, returnTime,"OK", null);
+//		}
 		return returnValue;
-	};
+	}
 
 	/**
 	 * Method parses error and tries to identify known Exceptions to throw
