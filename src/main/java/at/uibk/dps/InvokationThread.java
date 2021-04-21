@@ -1,14 +1,15 @@
 package at.uibk.dps;
 
-import at.uibk.dps.database.SQLLiteDatabase;
+import at.uibk.dps.database.Event;
+import at.uibk.dps.database.MongoDBAccess;
+import at.uibk.dps.database.Type;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
+import com.amazonaws.regions.Regions;
 import jFaaS.invokers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.amazonaws.regions.Regions;
 
 /**
  * Will invoke a single FaaS function on the correct provider
@@ -18,6 +19,7 @@ import com.amazonaws.regions.Regions;
  */
 public class InvokationThread implements Runnable {
 	final static Logger logger = LoggerFactory.getLogger(InvokationThread.class);
+	int memorySize = -1;
 	private Exception exception;
 	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
@@ -36,7 +38,7 @@ public class InvokationThread implements Runnable {
 		this.function = function;
 	}
 
-	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function){
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, Function function) {
 		this.googleFunctionAccount = googleFunctionAccount;
 		this.azureAccount = azureAccount;
 		this.function = function;
@@ -57,109 +59,12 @@ public class InvokationThread implements Runnable {
 	}
 
 
-	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount,  Function function){
+	public InvokationThread(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.googleFunctionAccount = googleFunctionAccount;
 		this.azureAccount = azureAccount;
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
 		this.function = function;
-	}
-
-
-	/**
-	 * detects the region of a Function on AWS
-	 * throws InvalidResourceException if region can not be detected
-	 */
-	private Regions detectAWSRegion(String functionURL) throws InvalidResourceException {
-		String regionName;
-		int searchIndex = functionURL.indexOf("lambda:");
-		if (searchIndex != -1) {
-			regionName = functionURL.substring(searchIndex + "lambda:".length());
-			regionName = regionName.split(":")[0];
-			try {
-				Regions tmp = Regions.fromName(regionName);
-				this.function.setRegion(regionName);
-				return tmp;
-			} catch (Exception e) {
-				throw new InvalidResourceException("Region detection failed");
-			}
-		} else {
-			// Error Parsing arn
-			throw new InvalidResourceException("Region detection failed");
-		}
-	}
-	
-	/**
-	 * detects the region of a Function on IBM and sets Region
-	 */
-	private void detectAndSetIBMRegion(String functionURL){
-		//https://eu-gb.functions.cloud.ibm.com
-		String regionName;
-		int searchIndex = functionURL.indexOf("://");
-		if (searchIndex != -1) {
-			regionName = functionURL.substring(searchIndex + "://".length());
-			regionName = regionName.split(".functions")[0];
-			this.function.setRegion(regionName);
-		} else {
-			this.function.setRegion(null);
-		}
-	}
-
-	public synchronized void reset() {
-		this.exception = null;
-		this.ibmInvoker = null;
-		this.cancel = false;
-		this.finished = false;
-		this.result = null;
-	}
-
-	/**
-	 * stops this thread
-	 */
-	public synchronized void stop() {
-		logger.info("Stopping");
-		// Stop invocation and terminate thread
-		this.cancel = true;
-		/*if (this.ibmInvoker != null) {
-			ibmInvoker.cancelInvoke(); // to stop IBM Invoke
-		}*/
-		this.thread.interrupt(); // to stop AWS Invoke
-	}
-
-	public synchronized Thread getThread() {
-		return thread;
-	}
-
-	public synchronized String getResult() {
-		return result;
-	}
-
-	public synchronized void setResult(String result) {
-		this.result = result;
-	}
-
-	@Override
-	public void run() {
-		this.thread = Thread.currentThread();
-		try {
-			// Try to invoke function
-			this.result = invokeFunctionOnCorrectProvider(this.function);
-		} catch (CancelInvokeException e) {
-			this.result = null;
-			logger.info("Invocation in " +thread.toString() + "has been canceled.");
-			this.exception = e;
-			this.finished = true;
-			return;
-		} catch (Exception e) {
-			this.result = null;
-			logger.error("Invocation in "+thread.toString() + "failed! - Error:"+e.getMessage());
-			this.exception = e;
-			this.finished = true;
-			return;
-		}
-		this.finished = true;
-		this.exception = null;
-		logger.info("Invocation in "+thread.toString() + " OK - " + "RESULT: " + result);
 	}
 
 	/**
@@ -183,89 +88,192 @@ public class InvokationThread implements Runnable {
 	}
 
 	/**
+	 * detects the region of a Function on AWS throws InvalidResourceException if region can not be detected
+	 */
+	private Regions detectAWSRegion(String functionURL) throws InvalidResourceException {
+		String regionName;
+		int searchIndex = functionURL.indexOf("lambda:");
+		if (searchIndex != -1) {
+			regionName = functionURL.substring(searchIndex + "lambda:".length());
+			regionName = regionName.split(":")[0];
+			try {
+				Regions tmp = Regions.fromName(regionName);
+				function.setRegion(regionName);
+				return tmp;
+			} catch (Exception e) {
+				throw new InvalidResourceException("Region detection failed");
+			}
+		} else {
+			// Error Parsing arn
+			throw new InvalidResourceException("Region detection failed");
+		}
+	}
+
+	/**
+	 * detects the region of a Function on IBM and sets Region
+	 */
+	private void detectAndSetIBMRegion(String functionURL){
+		//https://eu-gb.functions.cloud.ibm.com
+		String regionName;
+		int searchIndex = functionURL.indexOf("://");
+		if (searchIndex != -1) {
+			regionName = functionURL.substring(searchIndex + "://".length());
+			regionName = regionName.split(".functions")[0];
+			function.setRegion(regionName);
+		} else {
+			function.setRegion(null);
+		}
+	}
+
+	public synchronized void reset() {
+		exception = null;
+		ibmInvoker = null;
+		cancel = false;
+		finished = false;
+		result = null;
+	}
+
+	/**
+	 * stops this thread
+	 */
+	public synchronized void stop() {
+		logger.info("Stopping");
+		// Stop invocation and terminate thread
+		cancel = true;
+		/*if (this.ibmInvoker != null) {
+			ibmInvoker.cancelInvoke(); // to stop IBM Invoke
+		}*/
+		thread.interrupt(); // to stop AWS Invoke
+	}
+
+	public synchronized Thread getThread() {
+		return thread;
+	}
+
+	public synchronized String getResult() {
+		return result;
+	}
+
+	public synchronized void setResult(String result) {
+		this.result = result;
+	}
+
+	@Override
+	public void run() {
+		thread = Thread.currentThread();
+		long end, start = System.currentTimeMillis();
+		try {
+			// Try to invoke function
+			result = invokeFunctionOnCorrectProvider(function);
+		} catch (CancelInvokeException e) {
+			end = System.currentTimeMillis();
+			result = null;
+			logger.info("Invocation in " + thread.toString() + "has been canceled.");
+			MongoDBAccess.saveLog(Event.FUNCTION_CANCELED, function.getUrl(), function.getName(), function.getType(), end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
+			exception = e;
+			finished = true;
+			return;
+		} catch (Exception e) {
+			end = System.currentTimeMillis();
+			result = null;
+			logger.error("Invocation in " + thread.toString() + "failed! - Error:" + e.getMessage());
+			MongoDBAccess.saveLog(Event.FUNCTION_FAILED, function.getUrl(), function.getName(), function.getType(), end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
+			exception = e;
+			finished = true;
+			return;
+		}
+		end = System.currentTimeMillis();
+		finished = true;
+		exception = null;
+		logger.info("Invocation in " + thread.toString() + " OK - " + "RESULT: " + result);
+		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), end - start, true, memorySize, function.getLoopCounter(), start, Type.EXEC);
+	}
+
+	/**
 	 * invokes function on correct provider
 	 * throws Exception if invocation failed
 	 */
 	private String invokeFunctionOnCorrectProvider(Function function) throws Exception {
 		switch (detectProvider(function.getUrl())) {
-		case "ibm":
-			detectAndSetIBMRegion(function.getUrl());
-			OpenWhiskInvoker OWinvoker = new OpenWhiskInvoker(this.ibmAccount.getIBMKey());
-			this.ibmInvoker = OWinvoker; // Set so invocation can be canceled;
-			if (!this.cancel) {
-				OpenWhiskMonitor owMonitor = new OpenWhiskMonitor();
-				return owMonitor.monitoredInvoke(OWinvoker, function);
-			} else {
-				throw new CancelInvokeException();
-			}
-		case "aws":
-			try{
-			 Regions detectedRegion = detectAWSRegion(function.getUrl());
-			 function.setRegion(detectedRegion.getName());
-			 LambdaInvoker lambdaInvoker = new LambdaInvoker(this.awsAccount.getAwsAccessKey(),
-						this.awsAccount.getAwsSecretKey(), this.awsAccount.getAwsSecctionToken(), detectedRegion);
-				if (!this.cancel) {
-					LambdaMonitor lambdaMonitor = new LambdaMonitor();
-						return lambdaMonitor.monitoredInvoke(lambdaInvoker, function);
+			case "ibm":
+				detectAndSetIBMRegion(function.getUrl());
+				OpenWhiskInvoker OWinvoker = new OpenWhiskInvoker(ibmAccount.getIBMKey());
+				ibmInvoker = OWinvoker; // Set so invocation can be canceled;
+				if (!cancel) {
+					OpenWhiskMonitor owMonitor = new OpenWhiskMonitor();
+					return owMonitor.monitoredInvoke(OWinvoker, function);
 				} else {
 					throw new CancelInvokeException();
 				}
-			}catch(InvalidResourceException e){
-				// Add to DB (Normally after invokation - but will never be reached so we do it here)
-				if(Configuration.enableDatabase){
-					SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
-					DB.addInvocation(function.getUrl(), function.getType(), "AWS",null, null, null, e.getClass().getName(), "Region detection Failed");
+			case "aws":
+				try {
+					Regions detectedRegion = detectAWSRegion(function.getUrl());
+					function.setRegion(detectedRegion.getName());
+					LambdaInvoker lambdaInvoker = new LambdaInvoker(awsAccount.getAwsAccessKey(),
+							awsAccount.getAwsSecretKey(), awsAccount.getAwsSecctionToken(), detectedRegion);
+					memorySize = lambdaInvoker.getAssignedMemory(function.getUrl());
+					if (!cancel) {
+						LambdaMonitor lambdaMonitor = new LambdaMonitor();
+						return lambdaMonitor.monitoredInvoke(lambdaInvoker, function);
+					} else {
+						throw new CancelInvokeException();
+					}
+				} catch (InvalidResourceException e) {
+					// Add to DB (Normally after invokation - but will never be reached so we do it here)
+//				if(Configuration.enableDatabase){
+//					SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
+//					DB.addInvocation(function.getUrl(), function.getType(), "AWS",null, null, null, e.getClass().getName(), "Region detection Failed");
+//				}
+					throw e;
 				}
-				throw e;
-			}
-		case "alibaba":
-			// TODO do real monitoring
-			HTTPGETInvoker httpgetInvoker = new HTTPGETInvoker();
-			if (!this.cancel) {
-				return String.valueOf(httpgetInvoker.invokeFunction(function.getUrl(), function.getFunctionInputs()));
-			} else {
-				throw new CancelInvokeException();
-			}
+			case "alibaba":
+				// TODO do real monitoring
+				HTTPGETInvoker httpgetInvoker = new HTTPGETInvoker();
+				if (!cancel) {
+					return String.valueOf(httpgetInvoker.invokeFunction(function.getUrl(), function.getFunctionInputs()));
+				} else {
+					throw new CancelInvokeException();
+				}
 
-		case "google":
-			GoogleFunctionInvoker googleFunctionInvoker = null;
-			if(this.googleFunctionAccount.getServiceAccountKey() != null) {
-				 googleFunctionInvoker = new GoogleFunctionInvoker(this.googleFunctionAccount.getServiceAccountKey(), "serviceAccount");
-			} else{
-				googleFunctionInvoker = new GoogleFunctionInvoker();
-			}
-			if (!this.cancel) {
-				GoogleFunctionMonitor googleFunctionMonitor = new GoogleFunctionMonitor();
-				String returnValue= googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
-				return returnValue;
-			} else {
-				throw new CancelInvokeException();
-			}
-		case "azure":
-			AzureInvoker azureInvoker;
-			if(this.azureAccount.getAzureKey() != null) {
-				azureInvoker = new AzureInvoker(this.azureAccount.getAzureKey());
-			} else{
-				azureInvoker = new AzureInvoker();
-			}
-			if (!this.cancel) {
-				AzureMonitor azureMonitor = new AzureMonitor();
-				String returnValue= azureMonitor.monitoredInvoke(azureInvoker, function);
-				return returnValue;
-			} else {
-				throw new CancelInvokeException();
-			}
+			case "google":
+				GoogleFunctionInvoker googleFunctionInvoker = null;
+				if (googleFunctionAccount.getServiceAccountKey() != null) {
+					googleFunctionInvoker = new GoogleFunctionInvoker(googleFunctionAccount.getServiceAccountKey(), "serviceAccount");
+				} else {
+					googleFunctionInvoker = new GoogleFunctionInvoker();
+				}
+				if (!cancel) {
+					GoogleFunctionMonitor googleFunctionMonitor = new GoogleFunctionMonitor();
+					String returnValue = googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
+					return returnValue;
+				} else {
+					throw new CancelInvokeException();
+				}
+			case "azure":
+				AzureInvoker azureInvoker;
+				if (azureAccount.getAzureKey() != null) {
+					azureInvoker = new AzureInvoker(azureAccount.getAzureKey());
+				} else {
+					azureInvoker = new AzureInvoker();
+				}
+				if (!cancel) {
+					AzureMonitor azureMonitor = new AzureMonitor();
+					String returnValue = azureMonitor.monitoredInvoke(azureInvoker, function);
+					return returnValue;
+				} else {
+					throw new CancelInvokeException();
+				}
 
 
 			default:
-			// Tell Scheduler we cannot deal with this request;
+				// Tell Scheduler we cannot deal with this request;
 
-			InvalidResourceException exception = new InvalidResourceException("Detection of provider failed");
-			if(Configuration.enableDatabase) {
-				SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
-				DB.addInvocation(function.getUrl(), function.getType(), null,null, null, null,exception.getClass().getName(), "Provider detection Failed");
-			}
-			throw exception;
+				InvalidResourceException exception = new InvalidResourceException("Detection of provider failed");
+//			if(Configuration.enableDatabase) {
+//				SQLLiteDatabase DB = new SQLLiteDatabase("jdbc:sqlite:Database/FTDatabase.db");
+//				DB.addInvocation(function.getUrl(), function.getType(), null,null, null, null,exception.getClass().getName(), "Provider detection Failed");
+//			}
+				throw exception;
 		}
 	}
 
