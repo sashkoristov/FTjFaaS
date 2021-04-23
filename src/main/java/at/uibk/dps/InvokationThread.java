@@ -1,25 +1,23 @@
 package at.uibk.dps;
 
-import at.uibk.dps.database.Event;
-import at.uibk.dps.database.MongoDBAccess;
-import at.uibk.dps.database.Type;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
+import at.uibk.dps.mongoLogger.MongoDBAccess;
+import at.uibk.dps.util.Event;
+import at.uibk.dps.util.Type;
 import com.amazonaws.regions.Regions;
 import jFaaS.invokers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Will invoke a single FaaS function on the correct provider
- * Can be canceled using by calling the stop() function
- * Will store Exception in "exception" if invocation fails
- * If successful it will store result in "result"
+ * Will invoke a single FaaS function on the correct provider Can be canceled using by calling the stop() function Will
+ * store Exception in "exception" if invocation fails If successful it will store result in "result"
  */
 public class InvokationThread implements Runnable {
 	final static Logger logger = LoggerFactory.getLogger(InvokationThread.class);
-	int memorySize = -1;
+	Integer memorySize = null;
 	private Exception exception;
 	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
