@@ -1,9 +1,9 @@
 package at.uibk.dps;
 
+import at.uibk.dps.databases.MongoDBAccess;
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvalidResourceException;
 import at.uibk.dps.function.Function;
-import at.uibk.dps.mongoLogger.MongoDBAccess;
 import at.uibk.dps.util.Event;
 import at.uibk.dps.util.Type;
 import com.amazonaws.regions.Regions;

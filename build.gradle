@@ -52,4 +52,5 @@ shadowJar {
     archiveBaseName = 'FTjFaaS'
     classifier = null
     archiveVersion = null
+    version = null
 }
