@@ -167,7 +167,7 @@ public class InvokationThread implements Runnable {
 			end = System.currentTimeMillis();
 			result = null;
 			logger.info("Invocation in " + thread.toString() + "has been canceled.");
-			MongoDBAccess.saveLog(Event.FUNCTION_CANCELED, function.getUrl(), function.getName(), function.getType(), end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
+			MongoDBAccess.saveLog(Event.FUNCTION_CANCELED, function.getUrl(), function.getName(), function.getType(), result, end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
 			exception = e;
 			finished = true;
 			return;
@@ -175,7 +175,7 @@ public class InvokationThread implements Runnable {
 			end = System.currentTimeMillis();
 			result = null;
 			logger.error("Invocation in " + thread.toString() + "failed! - Error:" + e.getMessage());
-			MongoDBAccess.saveLog(Event.FUNCTION_FAILED, function.getUrl(), function.getName(), function.getType(), end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
+			MongoDBAccess.saveLog(Event.FUNCTION_FAILED, function.getUrl(), function.getName(), function.getType(), result, end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
 			exception = e;
 			finished = true;
 			return;
@@ -184,7 +184,7 @@ public class InvokationThread implements Runnable {
 		finished = true;
 		exception = null;
 		logger.info("Invocation in " + thread.toString() + " OK - " + "RESULT: " + result);
-		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), end - start, true, memorySize, function.getLoopCounter(), start, Type.EXEC);
+		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), result, end - start, true, memorySize, function.getLoopCounter(), start, Type.EXEC);
 	}
 
 	/**
