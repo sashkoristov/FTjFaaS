@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.xerial', name: 'sqlite-jdbc', version: '3.7.2'
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.7.2'
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'com.amazonaws:aws-lambda-java-core:1.1.0'
     implementation 'com.amazonaws:aws-java-sdk-lambda:1.11.327'
@@ -49,8 +49,7 @@ publishing {
 }
 
 shadowJar {
-    archiveBaseName = 'FTjFaaS'
-    classifier = null
-    archiveVersion = null
-    version = null
+    archiveBaseName.set('FTjFaaS')
+    archiveClassifier.set('')
+    archiveVersion.set('')
 }
