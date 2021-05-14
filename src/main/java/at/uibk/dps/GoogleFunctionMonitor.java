@@ -3,9 +3,10 @@ package at.uibk.dps;
 import at.uibk.dps.exception.AuthenticationFailedException;
 import at.uibk.dps.exception.MemoryExceededException;
 import at.uibk.dps.exception.TimeLimitException;
-import com.google.api.client.http.HttpResponseException;
 import at.uibk.dps.function.Function;
+import com.google.api.client.http.HttpResponseException;
 import jFaaS.invokers.FaaSInvoker;
+import jFaaS.utils.PairResult;
 
 
 /**
@@ -17,29 +18,27 @@ public class GoogleFunctionMonitor implements InvokeMonitor{
 
 
     @Override
-    public String monitoredInvoke(FaaSInvoker invoker, Function function) throws Exception {
+    public PairResult<String, Long> monitoredInvoke(FaaSInvoker invoker, Function function) throws Exception {
 
-        String returnValue = new String();
+        PairResult<String, Long> returnValue = null;
 
 
-        try{
-            returnValue= invoker.invokeFunction(function.getUrl(), function.getFunctionInputs()).toString();
-            assert returnValue!= null;
+        try {
+            returnValue = invoker.invokeFunction(function.getUrl(), function.getFunctionInputs());
+            assert returnValue != null;
 
-        } catch(HttpResponseException e){
+        } catch (HttpResponseException e) {
             int statusCode = e.getStatusCode();
 
-            if(statusCode == 403){
+            if (statusCode == 403) {
                 throw new AuthenticationFailedException(e.getMessage());
-            }
-            else if(statusCode== 503){
+            } else if (statusCode == 503) {
                 throw new MemoryExceededException(e.getMessage());
 
-            }
-            else if(statusCode==408){
+            } else if (statusCode == 408) {
                 throw new TimeLimitException(e.getMessage());
 
-            } else{
+            } else {
                 throw e;
 
             }

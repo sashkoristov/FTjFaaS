@@ -8,6 +8,7 @@ import at.uibk.dps.util.Event;
 import at.uibk.dps.util.Type;
 import com.amazonaws.regions.Regions;
 import jFaaS.invokers.*;
+import jFaaS.utils.PairResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,7 @@ public class InvokationThread implements Runnable {
 	volatile private boolean cancel = false;
 	volatile private boolean finished = false;
 	volatile private String result = null;
+	volatile private Long RTT = null; // round trip time
 
 	InvokationThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
@@ -129,6 +131,7 @@ public class InvokationThread implements Runnable {
 		cancel = false;
 		finished = false;
 		result = null;
+		RTT = null;
 	}
 
 	/**
@@ -156,13 +159,19 @@ public class InvokationThread implements Runnable {
 		this.result = result;
 	}
 
+	public Long getRTT() { return RTT; }
+
+	public void setRTT(Long RTT) { this.RTT = RTT; }
+
 	@Override
 	public void run() {
 		thread = Thread.currentThread();
 		long end, start = System.currentTimeMillis();
 		try {
 			// Try to invoke function
-			result = invokeFunctionOnCorrectProvider(function);
+			PairResult<String, Long> pairResult = invokeFunctionOnCorrectProvider(function);
+			result = pairResult.getResult();
+			RTT = pairResult.getRTT();
 		} catch (CancelInvokeException e) {
 			end = System.currentTimeMillis();
 			result = null;
@@ -180,18 +189,16 @@ public class InvokationThread implements Runnable {
 			finished = true;
 			return;
 		}
-		end = System.currentTimeMillis();
 		finished = true;
 		exception = null;
 		logger.info("Invocation in " + thread.toString() + " OK - " + "RESULT: " + result);
-		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), result, end - start, true, memorySize, function.getLoopCounter(), start, Type.EXEC);
+		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), result, RTT, true, memorySize, function.getLoopCounter(), start, Type.EXEC);
 	}
 
 	/**
-	 * invokes function on correct provider
-	 * throws Exception if invocation failed
+	 * invokes function on correct provider throws Exception if invocation failed
 	 */
-	private String invokeFunctionOnCorrectProvider(Function function) throws Exception {
+	private PairResult<String, Long> invokeFunctionOnCorrectProvider(Function function) throws Exception {
 		switch (detectProvider(function.getUrl())) {
 			case "ibm":
 				detectAndSetIBMRegion(function.getUrl());
@@ -209,7 +216,7 @@ public class InvokationThread implements Runnable {
 					function.setRegion(detectedRegion.getName());
 					LambdaInvoker lambdaInvoker = new LambdaInvoker(awsAccount.getAwsAccessKey(),
 							awsAccount.getAwsSecretKey(), awsAccount.getAwsSecctionToken(), detectedRegion);
-					memorySize = lambdaInvoker.getAssignedMemory(function.getUrl());
+//					memorySize = lambdaInvoker.getAssignedMemory(function.getUrl());
 					if (!cancel) {
 						LambdaMonitor lambdaMonitor = new LambdaMonitor();
 						return lambdaMonitor.monitoredInvoke(lambdaInvoker, function);
@@ -228,7 +235,7 @@ public class InvokationThread implements Runnable {
 				// TODO do real monitoring
 				HTTPGETInvoker httpgetInvoker = new HTTPGETInvoker();
 				if (!cancel) {
-					return String.valueOf(httpgetInvoker.invokeFunction(function.getUrl(), function.getFunctionInputs()));
+					return httpgetInvoker.invokeFunction(function.getUrl(), function.getFunctionInputs());
 				} else {
 					throw new CancelInvokeException();
 				}
@@ -242,8 +249,7 @@ public class InvokationThread implements Runnable {
 				}
 				if (!cancel) {
 					GoogleFunctionMonitor googleFunctionMonitor = new GoogleFunctionMonitor();
-					String returnValue = googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
-					return returnValue;
+					return googleFunctionMonitor.monitoredInvoke(googleFunctionInvoker, function);
 				} else {
 					throw new CancelInvokeException();
 				}
@@ -256,8 +262,7 @@ public class InvokationThread implements Runnable {
 				}
 				if (!cancel) {
 					AzureMonitor azureMonitor = new AzureMonitor();
-					String returnValue = azureMonitor.monitoredInvoke(azureInvoker, function);
-					return returnValue;
+					return azureMonitor.monitoredInvoke(azureInvoker, function);
 				} else {
 					throw new CancelInvokeException();
 				}

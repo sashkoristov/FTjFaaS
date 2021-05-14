@@ -8,7 +8,7 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.lambda.model.AWSLambdaException;
 import com.amazonaws.services.lambda.model.ResourceNotFoundException;
 import jFaaS.invokers.FaaSInvoker;
-import jFaaS.invokers.LambdaInvoker;
+import jFaaS.utils.PairResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,16 +16,18 @@ import java.sql.Timestamp;
 
 public class LambdaMonitor implements InvokeMonitor {
 
-    final static Logger logger = LoggerFactory.getLogger(LambdaMonitor.class);
+	final static Logger logger = LoggerFactory.getLogger(LambdaMonitor.class);
 
-    /**
-     * Method to invoke Lambda Functions with Monitoring (using dpsinvoker.jar) Parses errors and tries to identify
-     * known Exceptions to throw Returns correct value or throws Exception
-     */
-    @Override
-    public String monitoredInvoke(FaaSInvoker invoker, Function function)
-            throws Exception {
-		String returnValue;
+	/**
+	 * Method to invoke Lambda Functions with Monitoring (using dpsinvoker.jar) Parses errors and tries to identify
+	 * known Exceptions to throw Returns correct value or throws Exception
+	 *
+	 * @return
+	 */
+	@Override
+	public PairResult<String, Long> monitoredInvoke(FaaSInvoker invoker, Function function)
+			throws Exception {
+		PairResult<String, Long> returnValue;
 		Timestamp returnTime = null, invokeTime = null;
 		SQLLiteDatabase DB = null;
 //        if (Configuration.enableDatabase) {
@@ -34,8 +36,8 @@ public class LambdaMonitor implements InvokeMonitor {
 		try {
 			// save timestamp and invoke
 			invokeTime = new Timestamp(System.currentTimeMillis());
-			returnValue = invoker.invokeFunction(function.getUrl(), function.getFunctionInputs()).toString();
-			logger.info("Function has {} MB of assigned memory.", ((LambdaInvoker) invoker).getAssignedMemory(function.getUrl()));
+			returnValue = invoker.invokeFunction(function.getUrl(), function.getFunctionInputs());
+//			logger.info("Function has {} MB of assigned memory.", ((LambdaInvoker) invoker).getAssignedMemory(function.getUrl()));
 			assert returnValue != null;
 
 		} catch (AbortedException e) { //has been canceled
@@ -94,10 +96,10 @@ public class LambdaMonitor implements InvokeMonitor {
 		returnTime = new Timestamp(System.currentTimeMillis());
 
 		// check if any errors in returnValue
-		int searchIndex = returnValue.indexOf("\"errorType\"");
+		int searchIndex = returnValue.getResult().indexOf("\"errorType\"");
 		if (searchIndex != -1) {
-			if (returnValue.contains("Syntax error") || returnValue.contains("SyntaxError")) {// Syntax errors
-				SyntaxErrorException newException = new SyntaxErrorException(returnValue);
+			if (returnValue.getResult().contains("Syntax error") || returnValue.getResult().contains("SyntaxError")) {// Syntax errors
+				SyntaxErrorException newException = new SyntaxErrorException(returnValue.getResult());
 //				if(Configuration.enableDatabase){
 //					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime, newException.getClass().getName(), returnValue);
 //				}
@@ -107,14 +109,14 @@ public class LambdaMonitor implements InvokeMonitor {
 //				if(Configuration.enableDatabase){
 //					DB.addInvocation(function.getUrl(),function.getType(),"AWS",function.getRegion(), invokeTime, returnTime,parseError(returnValue, searchIndex), returnValue);
 //				}
-				throw new Exception(returnValue);
+				throw new Exception(returnValue.getResult());
 			}
 		}
-		
-		int searchIndex2 = returnValue.indexOf("\"errorMessage\"");
+
+		int searchIndex2 = returnValue.getResult().indexOf("\"errorMessage\"");
 		if (searchIndex2 != -1) {
-            if (returnValue.contains("Task timed out")) {// Timed out
-				TimedOutException exception = new TimedOutException(returnValue);
+			if (returnValue.getResult().contains("Task timed out")) {// Timed out
+				TimedOutException exception = new TimedOutException(returnValue.getResult());
 //                if (Configuration.enableDatabase) {
 //                    DB.addInvocation(function.getUrl(), function.getType(), "AWS", function.getRegion(), invokeTime, returnTime, exception.getClass().getName(), returnValue);
 //                }
@@ -124,7 +126,7 @@ public class LambdaMonitor implements InvokeMonitor {
 //                if (Configuration.enableDatabase) {
 //                    DB.addInvocation(function.getUrl(), function.getType(), "AWS", function.getRegion(), invokeTime, returnTime, parseError(returnValue, searchIndex), returnValue);
 //                }
-				throw new Exception(returnValue);
+				throw new Exception(returnValue.getResult());
 			}
 		}
 
