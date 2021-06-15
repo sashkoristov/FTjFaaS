@@ -16,6 +16,7 @@ public class Function {
 	private String name;    // only used to save to DB
 	private String type;
 	private int loopCounter;    // only used to save to DB
+	private int maxLoopCounter;    // only used to save to DB
 	private String region; //only used to save to DB
 	private Map<String, Object> functionInputs;
 	private FaultToleranceSettings FTSettings;
@@ -150,12 +151,12 @@ public class Function {
 
 	public void setLoopCounter(int loopCounter) { this.loopCounter = loopCounter; }
 
+	public int getMaxLoopCounter() { return maxLoopCounter; }
+
+	public void setMaxLoopCounter(int maxLoopCounter) { this.maxLoopCounter = maxLoopCounter; }
+
 	public boolean hasConstraintSet() {
-		if (constraints != null) {
-			return true;
-		} else {
-			return false;
-		}
+		return constraints != null;
 	}
 
 	public String getRegion() {
@@ -167,11 +168,7 @@ public class Function {
 	}
 
 	public boolean hasFTSet() {
-		if (FTSettings != null) {
-			return true;
-		} else {
-			return false;
-		}
+		return FTSettings != null;
 	}
 
 	public double getSuccessRate() {

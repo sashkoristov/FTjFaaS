@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
  */
 public class InvokationThread implements Runnable {
 	final static Logger logger = LoggerFactory.getLogger(InvokationThread.class);
-	Integer memorySize = null;
 	private Exception exception;
 	volatile private Thread thread;
 	private AWSAccount awsAccount = null;
@@ -176,7 +175,7 @@ public class InvokationThread implements Runnable {
 			end = System.currentTimeMillis();
 			result = null;
 			logger.info("Invocation in " + thread.toString() + "has been canceled.");
-			MongoDBAccess.saveLog(Event.FUNCTION_CANCELED, function.getUrl(), function.getName(), function.getType(), result, end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
+			MongoDBAccess.saveLog(Event.FUNCTION_CANCELED, function.getUrl(), function.getName(), function.getType(), result, end - start, false, function.getLoopCounter(), function.getMaxLoopCounter(), start, Type.EXEC);
 			exception = e;
 			finished = true;
 			return;
@@ -184,7 +183,7 @@ public class InvokationThread implements Runnable {
 			end = System.currentTimeMillis();
 			result = null;
 			logger.error("Invocation in " + thread.toString() + "failed! - Error:" + e.getMessage());
-			MongoDBAccess.saveLog(Event.FUNCTION_FAILED, function.getUrl(), function.getName(), function.getType(), result, end - start, false, memorySize, function.getLoopCounter(), start, Type.EXEC);
+			MongoDBAccess.saveLog(Event.FUNCTION_FAILED, function.getUrl(), function.getName(), function.getType(), result, end - start, false, function.getLoopCounter(), function.getMaxLoopCounter(), start, Type.EXEC);
 			exception = e;
 			finished = true;
 			return;
@@ -192,7 +191,7 @@ public class InvokationThread implements Runnable {
 		finished = true;
 		exception = null;
 		logger.info("Invocation in " + thread.toString() + " OK - " + "RESULT: " + result);
-		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), result, RTT, true, memorySize, function.getLoopCounter(), start, Type.EXEC);
+		MongoDBAccess.saveLog(Event.FUNCTION_END, function.getUrl(), function.getName(), function.getType(), result, RTT, true, function.getLoopCounter(), function.getMaxLoopCounter(), start, Type.EXEC);
 	}
 
 	/**
