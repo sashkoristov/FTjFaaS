@@ -15,6 +15,7 @@ public class Function {
 	private String url;
 	private String name;    // only used to save to DB
 	private String type;
+	private String deployment;
 	private int loopCounter;    // only used to save to DB
 	private int maxLoopCounter;    // only used to save to DB
 	private String region; //only used to save to DB
@@ -145,6 +146,14 @@ public class Function {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public String getDeployment() {
+		return deployment;
+	}
+
+	public void setDeployment(String deployment) {
+		this.deployment = deployment;
 	}
 
 	public int getLoopCounter() { return loopCounter; }
