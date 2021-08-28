@@ -30,7 +30,7 @@ public class InvokationThread implements Runnable {
 	volatile private boolean finished = false;
 	volatile private String result = null;
 
-	InvokationThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
+	public InvokationThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
 		this.function = function;
