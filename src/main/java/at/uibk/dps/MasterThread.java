@@ -1,12 +1,14 @@
 package at.uibk.dps;
-import java.util.ArrayList;
-import java.util.List;
 
 import at.uibk.dps.exception.CancelInvokeException;
 import at.uibk.dps.exception.InvokationFailureException;
 import at.uibk.dps.function.Function;
+import jFaaS.utils.PairResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * MasterThread that will execute FaultTolerance
@@ -24,13 +26,14 @@ public class MasterThread implements Runnable {
 	volatile private boolean cancel = false;
 	volatile private boolean finished = false;
 	volatile private String result = null;
+	volatile private Long RTT = null; // round trip time
 	volatile private InvokationThread invokThread = null;
 
 	MasterThread(AWSAccount awsAccount, IBMAccount ibmAccount, Function function) {
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
-		this.googleFunctionAccount = null;
-		this.azureAccount = null;
+		googleFunctionAccount = null;
+		azureAccount = null;
 		this.function = function;
 	}
 
@@ -38,8 +41,8 @@ public class MasterThread implements Runnable {
 		this.googleFunctionAccount = googleFunctionAccount;
 		this.azureAccount = azureAccount;
 		this.function = function;
-		this.awsAccount = null;
-		this.ibmAccount = null;
+		awsAccount = null;
+		ibmAccount = null;
 
 	}
 
@@ -69,10 +72,10 @@ public class MasterThread implements Runnable {
 	}
 
 	public synchronized void stop() {
-		if (this.invokThread != null) {
-			this.invokThread.stop();
+		if (invokThread != null) {
+			invokThread.stop();
 		}
-		this.cancel = true;
+		cancel = true;
 	}
 
 	public synchronized Thread getThread() {
@@ -90,6 +93,10 @@ public class MasterThread implements Runnable {
 	public synchronized void setResult(String result) {
 		this.result = result;
 	}
+
+	public Long getRTT() { return RTT; }
+
+	public void setRTT(Long RTT) { this.RTT = RTT; }
 
 	/**
 	 * returns index of first successful Thread in workerList
@@ -129,7 +136,7 @@ public class MasterThread implements Runnable {
 	/**
 	 * spawns multiple InvokationThreads to invoke multiple functions paralelly
 	 */
-	private String parallelInvoke(List<Function> functionList)
+	private PairResult<String, Long> parallelInvoke(List<Function> functionList)
 			throws CancelInvokeException, InvokationFailureException {
 		boolean running = true;
 		List<InvokationThread> workerList = new ArrayList<InvokationThread>(functionList.size());
@@ -137,20 +144,16 @@ public class MasterThread implements Runnable {
 			for (Function functionToBeInvoked : functionList) {
 				InvokationThread invocationThread = null;
 
-				if(this.awsAccount != null && this.ibmAccount!= null && this.googleFunctionAccount != null && this.azureAccount != null){
+				if (awsAccount != null && ibmAccount != null && googleFunctionAccount != null && azureAccount != null) {
 					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, awsAccount, ibmAccount, functionToBeInvoked);
-				}
-				else if(this.awsAccount != null && this.googleFunctionAccount != null && this.azureAccount != null){
+				} else if (awsAccount != null && googleFunctionAccount != null && azureAccount != null) {
 					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, awsAccount, functionToBeInvoked);
-				}
-				else if(this.azureAccount != null && this.googleFunctionAccount != null && this.ibmAccount != null){
+				} else if (azureAccount != null && googleFunctionAccount != null && ibmAccount != null) {
 					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, ibmAccount, functionToBeInvoked);
-				}
-				else if(this.azureAccount != null && this.googleFunctionAccount != null) {
-					 invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, functionToBeInvoked);
-				}
-				else {
-					 invocationThread = new InvokationThread(awsAccount, ibmAccount, functionToBeInvoked);
+				} else if (azureAccount != null && googleFunctionAccount != null) {
+					invocationThread = new InvokationThread(googleFunctionAccount, azureAccount, functionToBeInvoked);
+				} else {
+					invocationThread = new InvokationThread(awsAccount, ibmAccount, functionToBeInvoked);
 				}
 				Thread thread = new Thread(invocationThread);
 				thread.start();
@@ -161,8 +164,9 @@ public class MasterThread implements Runnable {
 				int indexOfSucessfull = successfullThread(workerList);
 				if (indexOfSucessfull != -1) {
 					String correctResult = workerList.get(indexOfSucessfull).getResult();
+					Long rtt = workerList.get(indexOfSucessfull).getRTT();
 					terminateAll(workerList);
-					return correctResult;
+					return new PairResult<>(correctResult, rtt);
 				}
 				if (allThreadsDone(workerList) == true && successfullThread(workerList) == -1) {
 					running = false;
@@ -173,7 +177,7 @@ public class MasterThread implements Runnable {
 				} catch (InterruptedException e) {
 					// Ignore
 				}
-				if (this.cancel) {
+				if (cancel) {
 					terminateAll(workerList);
 					System.out.flush();
 					throw new CancelInvokeException();
@@ -188,17 +192,16 @@ public class MasterThread implements Runnable {
 	/**
 	 * Invokes the alternativeStrategy of a given Function
 	 */
-	private String invokeAlternativeStategy(Function function) throws Exception {
+	private PairResult<String, Long> invokeAlternativeStategy(Function function) throws Exception {
 		// throws exception if it has tried entire alternativeStrategy without
 		// success
 		if (function.getFTSettings().getAltStrategy() != null) {
 			int i = 0;
 			for (List<Function> alternativePlan : function.getFTSettings().getAltStrategy()) {
-				logger.info("##############  Trying Alternative Plan "+i +"  ##############");
+				logger.info("##############  Trying Alternative Plan " + i + "  ##############");
 				i++;
 				try {
-					String result = parallelInvoke(alternativePlan);
-					return result;
+					return parallelInvoke(alternativePlan);
 				} catch (CancelInvokeException e) {
 					//
 					throw e;
@@ -218,16 +221,16 @@ public class MasterThread implements Runnable {
 	public void run() {
 		InvokationThread invokThread = null;
 
-		if(this.azureAccount != null && this.googleFunctionAccount != null   && this.awsAccount != null && this.ibmAccount != null) {
-			 invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, this.awsAccount, this.ibmAccount, function);
-		} else if(this.awsAccount != null && this.googleFunctionAccount != null && this.azureAccount != null) {
-			invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, this.awsAccount, function);
-		}else if(this.azureAccount != null && this.googleFunctionAccount != null && this.ibmAccount != null){
-			invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, this.ibmAccount, function);
-		}else if(this.azureAccount != null && this.googleFunctionAccount != null) {
-			invokThread = new InvokationThread(this.googleFunctionAccount, this.azureAccount, function);
+		if(azureAccount != null && googleFunctionAccount != null   && awsAccount != null && ibmAccount != null) {
+			 invokThread = new InvokationThread(googleFunctionAccount, azureAccount, awsAccount, ibmAccount, function);
+		} else if(awsAccount != null && googleFunctionAccount != null && azureAccount != null) {
+			invokThread = new InvokationThread(googleFunctionAccount, azureAccount, awsAccount, function);
+		}else if(azureAccount != null && googleFunctionAccount != null && ibmAccount != null){
+			invokThread = new InvokationThread(googleFunctionAccount, azureAccount, ibmAccount, function);
+		}else if(azureAccount != null && googleFunctionAccount != null) {
+			invokThread = new InvokationThread(googleFunctionAccount, azureAccount, function);
 		} else{
-			invokThread = new InvokationThread(this.awsAccount, this.ibmAccount, function);
+			invokThread = new InvokationThread(awsAccount, ibmAccount, function);
 		}
 		this.invokThread = invokThread; // so we can stop invocation
 		this.invokThread.run(); // Try to invoke the Function in this Thread;
@@ -235,11 +238,12 @@ public class MasterThread implements Runnable {
 
 		if (invokThread.getException() == null) {
 			// set correct result and terminate thread
-			this.result = this.invokThread.getResult();
-			this.finished = true;
+			result = this.invokThread.getResult();
+			RTT = this.invokThread.getRTT();
+			finished = true;
 			return;
 		} else { // check FT Settings because first invocation has failed.
-			if (this.function.hasFTSet()) {
+			if (function.hasFTSet()) {
 				int i = 0;
 				logger.info("##############  First invokation has failed retrying "+function.getFTSettings().getRetries()+ " times.  ##############");
 				while (i < function.getFTSettings().getRetries()) {
@@ -247,43 +251,48 @@ public class MasterThread implements Runnable {
 					this.invokThread.run();
 					if (invokThread.getException() == null) {
 						// set correct result and terminate thread
-						this.result = this.invokThread.getResult();
-						this.finished = true;
+						result = this.invokThread.getResult();
+						RTT = this.invokThread.getRTT();
+						finished = true;
 						return;
 					}
 					i = i + 1;
 				}
 				// Failed after all retries. Check for alternative Strategy
-				if (this.function.getFTSettings().hasAlternativeStartegy()) {
+				if (function.getFTSettings().hasAlternativeStartegy()) {
 					try {
-						String result = invokeAlternativeStategy(this.function);
+						PairResult<String, Long> result = invokeAlternativeStategy(function);
 						// AlternativeStrategy has correct Result
-						this.result = result;
-						this.finished = true;
+						this.result = result.getResult();
+						RTT = result.getRTT();
+						finished = true;
 						return;
-					}catch(CancelInvokeException e){
-						this.cancel = true;
-						this.finished = true;
-						this.result = null;
+					} catch (CancelInvokeException e) {
+						cancel = true;
+						finished = true;
+						result = null;
+						RTT = null;
 						return;
-					} 
-					catch (Exception e) {
-						this.cancel = false;
-						this.finished = true;
-						this.result = null;
+					} catch (Exception e) {
+						cancel = false;
+						finished = true;
+						result = null;
+						RTT = null;
 						return;
 					}
 				} else {
 					// no alternativeStrat set so failure
-					this.cancel = false;
-					this.finished = true;
-					this.result = null;
+					cancel = false;
+					finished = true;
+					result = null;
+					RTT = null;
 					return;
 				}
 			} else {
-				this.cancel = false;
-				this.finished = true;
-				this.result = null;
+				cancel = false;
+				finished = true;
+				result = null;
+				RTT = null;
 				return;
 			}
 

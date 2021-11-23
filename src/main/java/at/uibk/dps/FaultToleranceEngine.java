@@ -1,12 +1,13 @@
 package at.uibk.dps;
 
-import java.sql.Timestamp;
-
 import at.uibk.dps.exception.InvokationFailureException;
 import at.uibk.dps.exception.LatestFinishingTimeException;
 import at.uibk.dps.exception.LatestStartingTimeException;
 import at.uibk.dps.exception.MaxRunningTimeException;
 import at.uibk.dps.function.Function;
+import jFaaS.utils.PairResult;
+
+import java.sql.Timestamp;
 
 /**
  * Class to invoke Functions with fault-tolerance and/or constraints
@@ -22,16 +23,16 @@ public class FaultToleranceEngine {
 	public FaultToleranceEngine (AWSAccount awsAccount, IBMAccount ibmAccount) {
 		this.awsAccount = awsAccount;
 		this.ibmAccount = ibmAccount;
-		this.googleFunctionAccount = null;
-		this.azureAccount = null;
+		googleFunctionAccount = null;
+		azureAccount = null;
 	}
 
 	public FaultToleranceEngine(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount) {
 
 		this.googleFunctionAccount = googleFunctionAccount;
 		this.azureAccount = azureAccount;
-		this.ibmAccount = null;
-		this.awsAccount = null;
+		ibmAccount = null;
+		awsAccount = null;
 	}
 	public FaultToleranceEngine(GoogleFunctionAccount googleFunctionAccount, AzureAccount azureAccount, AWSAccount awsAccount, IBMAccount ibmAccount){
 		this.googleFunctionAccount = googleFunctionAccount;
@@ -52,17 +53,12 @@ public class FaultToleranceEngine {
 	}
 
 
-
-
-
-
 	/**
-	 * Function to invoke a Function with fault-tolerance and/or constraints
-	 * Will spawn multiple worker threads if necessary
-	 * Will check constraints and cancel invocations if needed
-	 * Throws Exceptions if it has failed to execute the function after trying everything
+	 * Function to invoke a Function with fault-tolerance and/or constraints Will spawn multiple worker threads if
+	 * necessary Will check constraints and cancel invocations if needed Throws Exceptions if it has failed to execute
+	 * the function after trying everything
 	 */
-	public String InvokeFunctionFT(Function function) throws InvokationFailureException, LatestStartingTimeException,
+	public PairResult<String, Long> InvokeFunctionFT(Function function) throws InvokationFailureException, LatestStartingTimeException,
 			LatestFinishingTimeException, MaxRunningTimeException {
 		if (function != null) {
 
@@ -73,43 +69,43 @@ public class FaultToleranceEngine {
 					if (timeAtStart.after(function.getConstraints().getLatestStartingTime())) {
 						throw new LatestStartingTimeException("latestStartingTime constraint missed!");
 					}
-					if (function.getConstraints().hasLatestFinishingTime() == false
-							&& function.getConstraints().hasMaxRunningTime() == false) {
+					if (!function.getConstraints().hasLatestFinishingTime()
+							&& !function.getConstraints().hasMaxRunningTime()) {
 						// neither LFT nor MRT set so we will not have to cancel
 						// Invocation (we do not need extra thread)
 						MasterThread master = null;
 
-						if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null && this.ibmAccount != null){
-							master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), this.getIbmAccount(), function);
-						} else if(this.googleFunctionAccount != null && this.azureAccount!=null && this.ibmAccount != null){
-							master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getIbmAccount(), function);
-						} else if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null ){
-							master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), function);
-						} else if(this.azureAccount != null && this.googleFunctionAccount != null) {
-							 master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), function);
+						if(googleFunctionAccount != null && azureAccount != null && awsAccount != null && ibmAccount != null){
+							master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getAwsAccount(), getIbmAccount(), function);
+						} else if(googleFunctionAccount != null && azureAccount !=null && ibmAccount != null){
+							master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getIbmAccount(), function);
+						} else if(googleFunctionAccount != null && azureAccount != null && awsAccount != null ){
+							master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getAwsAccount(), function);
+						} else if(azureAccount != null && googleFunctionAccount != null) {
+							 master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), function);
 						}else{
-							master= new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+							master= new MasterThread(getAwsAccount(), getIbmAccount(), function);
 						}
 						master.run();
 						// Current Thread will block until it has finished running
 						if (master.getResult() == null) {
 							throw new InvokationFailureException("Invokation has failed");
 						} else {
-							return master.getResult();
+							return new PairResult<>(master.getResult(), master.getRTT());
 						}
 					}
 				}
 				MasterThread master = null;
-				if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null && this.ibmAccount != null){
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), this.getIbmAccount(), function);
-				} else if(this.googleFunctionAccount != null && this.azureAccount!=null && this.ibmAccount != null){
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getIbmAccount(), function);
-				} else if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null ){
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), function);
-				} else if(this.azureAccount != null && this.googleFunctionAccount != null) {
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), function);
+				if(googleFunctionAccount != null && azureAccount != null && awsAccount != null && ibmAccount != null){
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getAwsAccount(), getIbmAccount(), function);
+				} else if(googleFunctionAccount != null && azureAccount !=null && ibmAccount != null){
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getIbmAccount(), function);
+				} else if(googleFunctionAccount != null && azureAccount != null && awsAccount != null ){
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getAwsAccount(), function);
+				} else if(azureAccount != null && googleFunctionAccount != null) {
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), function);
 				}else{
-					master= new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+					master= new MasterThread(getAwsAccount(), getIbmAccount(), function);
 				}
 				Thread thread = new Thread(master);
 				thread.start(); // start new thread to run because we have to be
@@ -135,7 +131,7 @@ public class FaultToleranceEngine {
 						if (master.getResult() == null) {
 							throw new InvokationFailureException("Invokation has failed alter entire alternative stategy");
 						} else {
-							return master.getResult();
+							return new PairResult<>(master.getResult(), master.getRTT());
 						}
 					}
 					try {
@@ -149,23 +145,23 @@ public class FaultToleranceEngine {
 				// need to cancel)
 				MasterThread master = null;
 
-				if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null && this.ibmAccount != null){
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), this.getIbmAccount(), function);
-				} else if(this.googleFunctionAccount != null && this.azureAccount!=null && this.ibmAccount != null){
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getIbmAccount(), function);
-				} else if(this.googleFunctionAccount != null && this.azureAccount != null && this.awsAccount != null ){
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), this.getAwsAccount(), function);
-				} else if(this.azureAccount != null && this.googleFunctionAccount != null) {
-					master = new MasterThread(this.getGoogleFunctionAccount(), this.getAzureAccount(), function);
+				if(googleFunctionAccount != null && azureAccount != null && awsAccount != null && ibmAccount != null){
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getAwsAccount(), getIbmAccount(), function);
+				} else if(googleFunctionAccount != null && azureAccount !=null && ibmAccount != null){
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getIbmAccount(), function);
+				} else if(googleFunctionAccount != null && azureAccount != null && awsAccount != null ){
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), getAwsAccount(), function);
+				} else if(azureAccount != null && googleFunctionAccount != null) {
+					master = new MasterThread(getGoogleFunctionAccount(), getAzureAccount(), function);
 				}else{
-					master= new MasterThread(this.getAwsAccount(), this.getIbmAccount(), function);
+					master= new MasterThread(getAwsAccount(), getIbmAccount(), function);
 				}
 
 				master.run(); // will block until it returns
 				if (master.getResult() == null) {
 					throw new InvokationFailureException("Invokation has failed");
 				} else {
-					return master.getResult();
+					return new PairResult<>(master.getResult(), master.getRTT());
 				}
 			}
 		} else {
@@ -190,11 +186,11 @@ public class FaultToleranceEngine {
 	}
 
 
-	public GoogleFunctionAccount getGoogleFunctionAccount() { return this.googleFunctionAccount; }
+	public GoogleFunctionAccount getGoogleFunctionAccount() { return googleFunctionAccount; }
 
 	public void setGoogleFunctionAccount(GoogleFunctionAccount googleFunctionAccount) { this.googleFunctionAccount = googleFunctionAccount; }
 
-	public AzureAccount getAzureAccount() { return this.azureAccount; }
+	public AzureAccount getAzureAccount() { return azureAccount; }
 
 	public void setAzureAccount(AzureAccount azureAccount) { this.azureAccount = azureAccount; }
 
